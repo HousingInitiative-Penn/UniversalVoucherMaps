@@ -1,7 +1,5 @@
 ---
 title: "Voucher_Maps"
-author: "Jenna Epstein"
-date: "7/8/2021"
 output: html_document
 ---
 
@@ -30,111 +28,7 @@ setwd("~/GitHub/UniversalVoucherMaps")
 
 ```
 
-```{r states data wrangling, eval=FALSE, include=FALSE}
-# DO NOT RUN THIS CHUNK - INITIAL DATA PROCESSING AND WRANGLING ----------------
-
-## bring in data for 30% AMI across breakouts and totals
-breakouts_30AMI <- read.csv("data/Vouchers_HHServed_Breakouts_States_30AMI.csv") %>%
-  dplyr::rename(NAME = ï..State) %>%
-  dplyr::rename(State = NAME)
-
-breakouts_50AMI <- read.csv("data/Vouchers_HHServed_Breakouts_States_50AMI.csv") %>%
-  dplyr::rename(NAME = ï..State) %>%
-  dplyr::rename(State = NAME)
-
-alleligible_30AMI <- read.csv("data/Vouchers_AllEligible_States_30AMI.csv") %>%
-  dplyr::rename(NAME = ï..State) %>%
-  dplyr::rename(State = NAME) %>%
-  dplyr::select(-Total.Monthly.Cost.of.Vouchers,
-                -Number.of.Vouchers,
-                -X.Total.Monthly.Cost.of.Vouchers.if.Only.Renters.Participate..Based.on.HUD.Avg..Expenditure.per.HH.by.State.,
-                -Total.Monthly.Cost.of.Vouchers.Based.on.HUD.Avg..Expenditure.per.HH.by.State,
-                -HUD.Avg..Monthly.Expenditure.per.HH.by.State)
-
-alleligible_50AMI <- read.csv("data/Vouchers_AllEligible_States_50AMI.csv") %>%
-  dplyr::rename(NAME = ï..State) %>%
-  dplyr::rename(State = NAME) %>%
-  dplyr::select(-Total.Monthly.Cost.of.Vouchers,
-                -Number.of.Vouchers,
-                -X.Total.Monthly.Cost.of.Vouchers.if.Only.Renters.Participate..Based.on.HUD.Avg..Expenditure.per.HH.by.State.,
-                -Total.Monthly.Cost.of.Vouchers.Based.on.HUD.Avg..Expenditure.per.HH.by.State,
-                -HUD.Avg..Monthly.Expenditure.per.HH.by.State)
-
-actual <- read.csv("data/Vouchers_Actual_States.csv") %>%
-  dplyr::rename(NAME = ï..State) %>%
-  dplyr::rename(State = NAME) %>%
-  dplyr::rename(Actual.Number.of.Vouchers.Available.2020 = Actual.Number.of.Vouchers.Available..2020.) %>%
-  dplyr::select(-HUD.Avg..Monthly.Expenditure.per.HH.by.State)
-
-## join
-mapdata_30AMI <- left_join(breakouts_30AMI, alleligible_30AMI, by="State") %>%
-  left_join(actual, by="State") %>%
-  dplyr::mutate(AMI = "30")
-
-mapdata_50AMI <- left_join(breakouts_50AMI, alleligible_50AMI, by="State") %>%
-  left_join(actual, by="State") %>%
-  dplyr::mutate(AMI = "50")
-
-state_mapdata <- merge(mapdata_30AMI, mapdata_50AMI, by="State")
-
-write.csv(state_mapdata, "voucher_map_data_states.csv")
-```
-
-```{r msa data wrangling, eval=FALSE, include=FALSE}
-# DO NOT RUN THIS CHUNK - INITIAL DATA PROCESSING AND WRANGLING ----------------
-
-## bring in data for 30% AMI
-
-msa_breakouts_30AMI <- read.csv("data/Vouchers_HHServed_Breakouts_MSAs_30AMI.csv") %>%
-  dplyr::rename(NAME = ï..MSA) %>%
-  dplyr::rename(MSA = NAME)
-
-msa_breakouts_50AMI <- read.csv("data/Vouchers_HHServed_Breakouts_MSAs_50AMI.csv") %>%
-  dplyr::rename(NAME = ï..MSA) %>%
-  dplyr::rename(MSA = NAME)
-
-
-msa_alleligible_30AMI <- read.csv("data/Vouchers_AllEligible_MSAs_30AMI.csv") %>%
-  dplyr::rename(NAME = ï..MSA) %>%
-  dplyr::rename(MSA = NAME) %>%
-  dplyr::select(-Total.Monthly.Cost.of.Vouchers,
-                -Number.of.Vouchers,
-                -X.Total.Monthly.Cost.of.Vouchers.if.Only.Renters.Participate..Based.on.HUD.Avg..Expenditure.per.HH.by.MSA.,
-                -Total.Monthly.Cost.of.Vouchers.Based.on.HUD.Avg..Expenditure.per.HH.by.MSA,
-                -HUD.Avg..Monthly.Expenditure.per.HH.by.MSA)
-
-##50% ami for MSAs- were two columns mislabled state here? not included in map so doesn't really matter
-msa_alleligible_50AMI <- read.csv("data/Vouchers_AllEligible_MSAs_50AMI.csv") %>%
-  dplyr::rename(NAME = ï..MSA) %>%
-  dplyr::rename(MSA = NAME) %>%
-  dplyr::select(-Total.Monthly.Cost.of.Vouchers,
-                -Number.of.Vouchers,
-                -X.Total.Monthly.Cost.of.Vouchers.if.Only.Renters.Participate..Based.on.HUD.Avg..Expenditure.per.HH.by.State.,
-                -Total.Monthly.Cost.of.Vouchers.Based.on.HUD.Avg..Expenditure.per.HH.by.State,
-                -HUD.Avg..Monthly.Expenditure.per.HH.by.MSA)
-
-msa_actual <- read.csv("data/Vouchers_Actual_MSAs.csv") %>%
-  dplyr::rename(NAME = ï..MSA) %>%
-    dplyr::rename(MSA = NAME) %>%
-  dplyr::rename(Actual.Number.of.Vouchers.Available.2020 = Actual.Number.of.Vouchers.Available..2020.) %>%
-  dplyr::select(-HUD.Avg..Monthly.Expenditure.per.HH.by.MSA)
-
-## join
-msa_mapdata_30AMI <- left_join(msa_alleligible_30AMI, msa_actual, by="MSA") %>%
-  left_join(msa_breakouts_30AMI, by="MSA") %>%
-  dplyr::mutate(AMI = "30")
-
-msa_mapdata_50AMI <- left_join(msa_alleligible_50AMI, msa_actual, by="MSA") %>%
-    left_join(msa_breakouts_50AMI, by="MSA") %>%
-  dplyr::mutate(AMI = "50")
-
-msa_mapdata <- merge(msa_mapdata_30AMI, msa_mapdata_50AMI, by="MSA")
-
-write.csv(msa_mapdata, "voucher_map_data_msas.csv")
-```
-
-
-# Data Wrangling - Three Code Chunks to Run Each Time
+# Load Data
 
 ```{r states data to load for mapping, message=TRUE, warning=FALSE}
 # STATES DATA (update with local file paths, if different)
@@ -596,7 +490,7 @@ msas_voucher_map <- map %>% setView(lng = -98.34,
                 lapply(htmltools::HTML),
   ) %>%
    addLayersControl(
-     overlayGroups = c("<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_states.png' height='15' width='15'> SOI Protections: States", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_counties.png' height='15' width='15'> SOI Protections: Counties", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_cities.png' height='15' width='15'> SOI Protections: Cities", "<https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_safmr.png' height='15' width='15'> SAFMR Sites"), 
+     overlayGroups = c("<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_states.png' height='15' width='15'> SOI Protections: States", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_counties.png' height='15' width='15'> SOI Protections: Counties", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_cities.png' height='15' width='15'> SOI Protections: Cities", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_safmr.png' height='15' width='15'> SAFMR Sites"), 
      baseGroups = c("30%", "50%"),
      position = "bottomleft",
      options = layersControlOptions(collapsed = FALSE)) %>%
