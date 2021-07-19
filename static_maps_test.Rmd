@@ -1,0 +1,128 @@
+---
+title: "Universal Voucher Static Maps"
+author: "Jenna Epstein"
+date: "7/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load libraries
+library(tidyverse)
+library(sf)
+library(dplyr)
+library(tigris)
+library(shiny)
+library(rgdal)
+library(DT)
+library(leaflet)
+library(leafpop)
+library(mapview)
+library(RColorBrewer)
+library(htmlwidgets)
+library(leaflegend)
+library(mapview)
+library(readxl)
+library(plotly)
+library(reshape2)
+
+# set working directory
+setwd("~/GitHub/UniversalVoucherMaps")
+
+```
+
+
+```{r data}
+hh_lifted_out_poverty_30AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_30AMI.xlsx") %>%
+  mutate(AMI = "30")
+hh_lifted_out_poverty_50AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_50AMI.xlsx") %>%
+  mutate(AMI = "50")
+
+
+voucher_breakouts_30AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_30AMI.xlsx") %>%
+  mutate(AMI = "30")
+voucher_breakouts_50AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_50AMI.xlsx") %>%
+  mutate(AMI = "50")
+
+## bring in states shapefile, read as an sf
+states <- st_read("data/states_shp/cb_2018_us_state_500k.shp") %>%
+  dplyr::select(-AWATER, -ALAND, -STATEFP) %>%
+  dplyr::rename(State = NAME) %>%
+  st_transform("EPSG:4326")
+
+
+# centroids for state labels
+states_centroids <- st_centroid(states)
+ 
+ states_centroids <- states_centroids %>%
+   dplyr::mutate(x = sf::st_coordinates(.)[,1], 
+                 y = sf::st_coordinates(.)[,2])
+
+# join data with states
+static_mapdata_30AMI <- left_join(hh_lifted_out_poverty_30AMI, states, by="State") %>%
+  left_join(voucher_breakouts_30AMI)
+
+static_mapdata_30AMI <- static_mapdata_30AMI %>% st_as_sf() %>%
+  st_transform("EPSG:4326")
+
+static_mapdata_50AMI <- left_join(hh_lifted_out_poverty_50AMI, states, by="State") %>%
+  left_join(voucher_breakouts_50AMI)
+
+static_mapdata_50AMI <- static_mapdata_50AMI %>% st_as_sf() %>%
+  st_transform("EPSG:4326")
+
+```
+```{r}
+static_mapdata_30AMI_ArcGIS <- static_mapdata_30AMI %>%
+  dplyr::rename(Children = `Number of Vouchers Going to Rental Households with Children`) %>%
+  dplyr::rename(Seniors = `Number of Vouchers Going to Rental Households with Seniors`) %>%
+  dplyr::rename(Color = `Number of Vouchers Going to Rental Households with Householders of Color`) %>%
+  dplyr::rename(OutPoverty = `Number Lifted Out of Poverty by Voucher`) 
+
+static_mapdata_30AMI_ArcGIS <- static_mapdata_30AMI_ArcGIS %>%
+  dplyr::select(State, Children, Seniors, Color, OutPoverty, geometry)
+
+st_write(static_mapdata_30AMI_ArcGIS, "static_mapdata_30AMI_ArcGIS.shp")
+```
+
+```{r}
+# Create leaflet palette, labels, map object
+#palette1a <- colorNumeric(c("#ffffff", "#1f2859"), domain=mapdata$Voucher_Gap_30AMI)
+pal <- colorNumeric(palette="YlOrRd", domain=NULL)
+
+
+map <- leaflet(map)
+    
+map.hh_children <- map %>% setView(lng = -98.34,
+                lat = 39.49,
+                zoom = 4.25) %>%
+  setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
+  leaflet(options=leafletOptions(zoomControl=FALSE))%>%
+  addProviderTiles("CartoDB.PositronNoLabels", options = providerTileOptions(minZoom = 3.5)) %>%
+  addPolygons(data = static_mapdata_30AMI,
+              fillColor = ~ pal(static_mapdata_30AMI$`Number of Vouchers Going to Rental Households with Children`),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8) %>%
+  addLabelOnlyMarkers(data = states_centroids,
+                     lng = ~x,
+                     lat = ~y, 
+                     label = ~STUSPS,
+                     labelOptions = labelOptions(noHide = TRUE, textOnly = T,
+                                   style = list(
+                                   "color" = "black", 
+                                   "font-weight" = "bold",
+                                   "font-size" = "10px"
+                                 ))) %>%
+  addLegend(data=static_mapdata_30AMI,
+      position = "bottomright",
+      values = ~static_mapdata_30AMI$`Number of Vouchers Going to Rental Households with Children`, 
+      pal = pal,
+      opacity = 0.95,
+      title = "Vouchers")
+
+map.hh_children
+```
+
