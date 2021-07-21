@@ -1,0 +1,238 @@
+---
+title: "Universal Voucher Static Maps"
+author: "Jenna Epstein"
+date: "7/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load libraries
+library(tidyverse)
+library(sf)
+library(dplyr)
+library(tigris)
+library(shiny)
+library(rgdal)
+library(DT)
+library(leaflet)
+library(leafpop)
+library(mapview)
+library(RColorBrewer)
+library(htmlwidgets)
+library(leaflegend)
+library(mapview)
+library(readxl)
+library(plotly)
+library(reshape2)
+
+# set working directory
+setwd("~/GitHub/UniversalVoucherMaps")
+
+```
+
+
+```{r data}
+hh_lifted_out_poverty_30AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_30AMI.xlsx") %>%
+  mutate(AMI = "30")
+hh_lifted_out_poverty_50AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_50AMI.xlsx") %>%
+  mutate(AMI = "50")
+
+
+voucher_breakouts_30AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_30AMI.xlsx") %>%
+  mutate(AMI = "30")
+voucher_breakouts_50AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_50AMI.xlsx") %>%
+  mutate(AMI = "50")
+
+## bring in states shapefile, read as an sf
+states <- st_read("data/states_shp/cb_2018_us_state_500k.shp") %>%
+  dplyr::select(-AWATER, -ALAND, -STATEFP) %>%
+  dplyr::rename(State = NAME) %>%
+  st_transform("EPSG:4326")
+
+
+# centroids for state labels
+states_centroids <- st_centroid(states)
+ 
+ states_centroids <- states_centroids %>%
+   dplyr::mutate(x = sf::st_coordinates(.)[,1], 
+                 y = sf::st_coordinates(.)[,2])
+
+# join data with states
+static_mapdata_30AMI <- left_join(hh_lifted_out_poverty_30AMI, states, by="State") %>%
+  left_join(voucher_breakouts_30AMI)
+
+static_mapdata_30AMI <- static_mapdata_30AMI %>% st_as_sf() %>%
+  st_transform("EPSG:4326")
+
+static_mapdata_50AMI <- left_join(hh_lifted_out_poverty_50AMI, states, by="State") %>%
+  left_join(voucher_breakouts_50AMI)
+
+static_mapdata_50AMI <- static_mapdata_50AMI %>% st_as_sf() %>%
+  st_transform("EPSG:4326")
+
+
+static_mapdata_30AMI <- static_mapdata_30AMI %>%
+  dplyr::rename(Children = `Number of Vouchers Going to Rental Households with Children`) %>%
+  dplyr::rename(Seniors = `Number of Vouchers Going to Rental Households with Seniors`) %>%
+  dplyr::rename(Color = `Number of Vouchers Going to Rental Households with Householders of Color`) %>%
+  dplyr::rename(OutPoverty = `Number Lifted Out of Poverty by Voucher`) 
+
+
+static_mapdata_50AMI <- static_mapdata_50AMI %>%
+  dplyr::rename(Children = `Number of Vouchers Going to Rental Households with Children`) %>%
+  dplyr::rename(Seniors = `Number of Vouchers Going to Rental Households with Seniors`) %>%
+  dplyr::rename(Color = `Number of Vouchers Going to Rental Households with Householders of Color`) %>%
+  dplyr::rename(OutPoverty = `Number Lifted Out of Poverty by Voucher`)
+
+# static_mapdata_30AMI_ArcGIS <- static_mapdata_30AMI_ArcGIS %>%
+#   dplyr::select(State, Children, Seniors, Color, OutPoverty, geometry)
+
+#st_write(static_mapdata_30AMI_ArcGIS, "static_mapdata_30AMI_ArcGIS.shp")
+```
+
+
+```{r}
+label_children = paste(
+              "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+                "<strong>","<font size=2>", "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Children, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+label_seniors = paste(
+              "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+                "<strong>", "<font size=2>", "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Seniors, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+label_color = paste(
+              "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+                "<strong>", "<font size=2>",  "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Color, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+label_outpoverty = paste(
+              "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+                "<strong>",  "<font size=2>", "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$OutPoverty, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+
+```
+
+```{r}
+# Create leaflet palette, labels, map object
+#palette1a <- colorNumeric(c("#ffffff", "#1f2859"), domain=mapdata$Voucher_Gap_30AMI)
+pal_children <- colorNumeric(palette="Blues", domain=NULL)
+pal_seniors <- colorNumeric(palette="Purples", domain=NULL)
+pal_ofcolor <- colorNumeric(palette="Reds", domain=NULL)
+pal_outofpoverty <- colorNumeric(palette="Greens", domain=NULL)
+
+map <- leaflet(map)
+    
+map_breakouts <- map %>% setView(lng = -98.34,
+                lat = 39.49,
+                zoom = 4.25) %>%
+  setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
+  addMapPane(name = "polygons", zIndex = 410) %>% 
+  addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
+  addProviderTiles("CartoDB.PositronNoLabels",
+                                      options = providerTileOptions(minZoom = 3.5)) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels", 
+                   options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
+                   group = "map labels") %>%
+  addPolygons(data = static_mapdata_30AMI,
+              fillColor = ~ pal_children(static_mapdata_30AMI$Children),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_children,
+              group = "With_Children") %>%
+  addLegend(data=static_mapdata_30AMI,
+              position = "bottomright",
+              values = ~static_mapdata_30AMI$Children, 
+              pal = pal_children,
+              opacity = 0.95,
+              title = "Households Served",
+              group = "With_Children",
+              className = "info legend With_Children") %>%
+  addPolygons(data = static_mapdata_30AMI,
+              fillColor = ~ pal_seniors(static_mapdata_30AMI$Seniors),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_seniors,
+              group = "With_Seniors") %>%
+  addLegend(data=static_mapdata_30AMI,
+              position = "bottomright",
+              values = ~static_mapdata_30AMI$Seniors, 
+              pal = pal_seniors,
+              opacity = 0.95,
+              title = "Households Served",
+              group = "With_Seniors",
+              className = "info legend With_Seniors") %>%
+   addPolygons(data = static_mapdata_30AMI,
+              fillColor = ~ pal_ofcolor(static_mapdata_30AMI$Color),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_color,
+              group = "Of_Color") %>%
+  addLegend(data=static_mapdata_30AMI,
+              position = "bottomright",
+              values = ~static_mapdata_30AMI$Color, 
+              pal = pal_ofcolor,
+              opacity = 0.95,
+              title = "Households Served",
+              group = "Of_Color",
+              className = "info legend Of_Color") %>%
+  addPolygons(data = static_mapdata_30AMI,
+              fillColor = ~ pal_outofpoverty(static_mapdata_30AMI$OutPoverty),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_outpoverty,
+      group = "Lifted_out_of_Poverty") %>%
+  addLegend(data=static_mapdata_30AMI,
+              position = "bottomright",
+              values = ~static_mapdata_30AMI$OutPoverty, 
+              pal = pal_outofpoverty,
+              opacity = 0.95,
+              title = "Households Served",
+              group = "Lifted_out_of_Poverty",
+              className = "info legend Lifted_out_of_Poverty") %>%
+  addLayersControl(
+     baseGroups = c("With_Children", "With_Seniors", "Of_Color", "Lifted_out_of_Poverty"),
+     position = "bottomleft",
+     options = layersControlOptions(collapsed = FALSE)) %>%
+   htmlwidgets::onRender("
+      function(el, x) {
+         var updateLegend = function () {
+            var selectedGroup = document.querySelectorAll('input:checked')[0].nextSibling.innerText.substr(1);
+
+            document.querySelectorAll('.legend').forEach(a => a.hidden=true);
+            document.querySelectorAll('.legend').forEach(l => {
+               if (l.classList.contains(selectedGroup)) l.hidden=false;
+            });
+         };
+         updateLegend();
+         this.on('baselayerchange', el => updateLegend());
+      }"
+  ) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select a Group of Households:</label>');
+        }
+    ") %>%
+htmlwidgets::onRender("
+    function(el, x) {
+      this.on('baselayerchange', function(e) {
+        e.layer.bringToBack();
+      })
+    }
+  ") 
+
+map_breakouts
+
+```
+```{r}
+saveWidget(map_breakouts, file="map_states_breakouts.html")
+```
+
