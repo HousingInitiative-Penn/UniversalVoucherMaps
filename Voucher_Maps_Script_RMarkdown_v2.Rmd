@@ -57,6 +57,7 @@ plotTheme <- function(base_size = 12) {
   )
 }
 paletteHIP3 <- c("#f0c332", "#009244", "#1f2859")
+#paletteHIP2 <- c("#f0c332", "#009244")
 paletteHIP2 <- c("#f0c332", "#009244")
 #light green 8cc63f
 #gray 969696
@@ -70,7 +71,7 @@ paletteHIP2 <- c("#f0c332", "#009244")
 # STATES DATA (update with local file paths, if different)
 
 ## Read in the csv
-mapdata <- read.csv("data/voucher_map_data_states_final.csv")
+mapdata_states <- read_excel("data/States_Universal_Voucher_AllData.xlsx")
 
 ## bring in states shapefile, read as an sf
 states <- st_read("data/states_shp/cb_2018_us_state_500k.shp") %>%
@@ -86,33 +87,50 @@ states <- st_read("data/states_shp/cb_2018_us_state_500k.shp") %>%
 #   dplyr::mutate(x = sf::st_coordinates(.)[,1], 
 #                 y = sf::st_coordinates(.)[,2])
 
-# join csv with states
-mapdata <- left_join(mapdata, states, by="State")
+# join with states
+mapdata_states <- left_join(mapdata_states, states, by="State")
 
-mapdata <- mapdata %>% st_as_sf() %>%
+mapdata_states <- mapdata_states %>% st_as_sf() %>%
   st_transform("EPSG:4326")
 
 ```
 
 ```{r msas data to load for mapping, message=FALSE, warning=FALSE}
 # MSAS DATA (update with local file paths, if different)
-msas_mapdata <- read.csv("data/voucher_map_data_msas_final.csv")
+mapdata_msas <- read_excel("data/MSAs_Universal_Voucher_AllData.xlsx")
 
 # bring in states shapefile, read as an sf
-msas <- st_read("data/msas_shp/Metros.shp")%>%
+msas <- st_read("data/msas_shp/tl_2013_us_cbsa.shp")%>%
   dplyr::select(-AWATER, -ALAND, -CSAFP, -CBSAFP) %>%
   dplyr::rename(MSA = NAME) %>%
   st_transform(st_crs(states))
 
-# join csv with msas
-msas_mapdata <- left_join(msas_mapdata, msas, by="MSA")
+# join with msas
+mapdata_msas <- left_join(mapdata_msas, msas, by="MSA")
 
-msas_mapdata <- msas_mapdata %>% st_as_sf() %>%
+mapdata_msas <- mapdata_msas %>% st_as_sf() %>%
   st_transform(st_crs(states))
 
 ```
+`
 
-```{r popup content}
+```{r rural areas data to load for mapping, message=FALSE, warning=FALSE}
+mapdata_rural <- read_excel("data/RuralAreas_Universal_Voucher_AllData.xlsx")
+
+## bring in states shapefile, read as an sf
+states <- st_read("data/states_shp/cb_2018_us_state_500k.shp") %>%
+  dplyr::select(-AWATER, -ALAND, -STATEFP) %>%
+  dplyr::rename(State = NAME) %>%
+  st_transform("EPSG:4326")
+
+# join with states
+mapdata_rural <- left_join(mapdata_rural, states, by="State")
+
+mapdata_rural <- mapdata_rural %>% st_as_sf() %>%
+  st_transform("EPSG:4326")
+
+```
+```{r OLD popup content, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 #popup content states
 state_popup_30AMI = paste(
                 "<strong>", "<font size=3.5 color=#009244>",mapdata$State, "</font>", "</strong>","<br>","<hr>",
@@ -194,7 +212,6 @@ msa_popup_30AMI = paste(
 # Run data wrangling for safmr and soi protections:
 
 # SAMFAR Sites
-
 ## read in counties shapefile
 counties <- st_read("data/counties_shp/cb_2018_us_county_500k.shp")
 counties$GEOID <- as.character(counties$GEOID)
@@ -260,50 +277,83 @@ soi_safmr_overlay_groups <- c("<img src='https://housinginitiative-penn.github.i
 
 ```
 
-# Voucher Map - States
-## Map 1
+# Voucher Gap Maps
+## States
 
-```{r creating popup bar graphs for the voucher gap map}
-#ONLY DOING THIS FOR 30% AMI? eligible hh we have for each scenario, but only calculated voucher gap at 30 ami.
+```{r creating popup bar graphs for the voucher gap 30 map}
 
-mapdata_states_long <- mapdata %>%
-  dplyr::select(State, Actual_Vouchers_Avail, Eligible_HH_30AMI, Voucher_Gap_30AMI) %>%
-  dplyr::rename("Actual Vouchers Available in 2020" = Actual_Vouchers_Avail) %>%
-  dplyr::rename("Total Eligible Households" = Eligible_HH_30AMI) %>%
-  dplyr::rename("Voucher Gap" = Voucher_Gap_30AMI)
+mapdata_states_long_30 <- mapdata_states %>%
+  dplyr::select(`State`, `Total Households Actual`, `Total Households 30AMI Eligible`) %>%
+  dplyr::rename("Actual Vouchers Available in 2020" = `Total Households Actual`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 30AMI Eligible`)
+  #dplyr::rename("Voucher Gap" = `Voucher Gap at 30% AMI, Normalized by Renter Pop`)
 
-mapdata_states_long <- melt(mapdata_states_long, id="State", measure=c("Actual Vouchers Available in 2020", "Total Eligible Households", "Voucher Gap"))
+mapdata_states_long_30 <- melt(mapdata_states_long_30, id="State", measure=c("Total Eligible Households", "Actual Vouchers Available in 2020"))
 
-mapdata_states_long_labels=c("Actual\nVouchers\nAvailable\nin 2020", 
-                        "Total\nEligible\nHouseholds", "Voucher\nGap")
+mapdata_states_long_30_labels=c("Total\nEligible\nHouseholds", "Actual\nVouchers\nAvailable\nin 2020")
 
-my_list <- list()  
-loop<-for (i in unique(mapdata$State)) {
-State<-mapdata_states_long%>% filter(State==i)
+plot_list_vouchergap_30AMI <- list()  
+loop<-for (i in unique(mapdata_states_long_30$State)) {
+State<-mapdata_states_long_30%>% filter(State==i)
   plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
-    geom_text(aes(label = format(value, big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
     scale_fill_manual(values = paletteHIP3) + 
-    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1450000)) +
-    scale_x_discrete(labels=mapdata_states_long_labels)+
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
+    scale_x_discrete(labels=mapdata_states_long_30_labels)+
     labs(x="", y="", title=i)+
     plotTheme()
-  my_list[[i]] <- plot
+  plot_list_vouchergap_30AMI[[i]] <- plot
 }
 
 ```
 
-```{r map states}
+```{r creating popup bar graphs for the voucher gap 50 map}
+
+mapdata_states_long_50 <- mapdata_states %>%
+  dplyr::select(`State`, `Total Households Actual`, `Total Households 50AMI Eligible`) %>%
+  dplyr::rename("Actual Vouchers Available in 2020" = `Total Households Actual`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 50AMI Eligible`)
+  #dplyr::rename("Voucher Gap" = `Voucher Gap at 50% AMI, Normalized by Renter Pop`)
+
+mapdata_states_long_50 <- melt(mapdata_states_long_50, id="State", measure=c("Total Eligible Households", "Actual Vouchers Available in 2020"))
+
+mapdata_states_long_50_labels=c("Total\nEligible\nHouseholds", "Actual\nVouchers\nAvailable\nin 2020")
+
+plot_list_vouchergap_50AMI <- list()  
+loop<-for (i in unique(mapdata_states_long_50$State)) {
+State<-mapdata_states_long_50%>% filter(State==i)
+  plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
+    geom_bar(stat="identity", show.legend = FALSE) +
+    geom_text(aes(label = format(round(value, digits=0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    scale_fill_manual(values = paletteHIP3) + 
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 2500000)) +
+    scale_x_discrete(labels=mapdata_states_long_50_labels)+
+    labs(x="", y="", title=i)+
+    plotTheme()
+  plot_list_vouchergap_50AMI[[i]] <- plot
+}
+
+```
+
+
+
+```{r create leaflet map states}
 #mapdata$Actual.Number.of.Vouchers.Available.2020.x <- as.numeric(mapdata$Actual.Number.of.Vouchers.Available.2020.x)
 
 # STATES MAP - Universe of eligible households, actual vouchers available in 2020, voucher number gap
 
 # Create leaflet palette, labels, map object
-palette1a <- colorNumeric(c("#ffffff", "#1f2859"), domain=mapdata$Voucher_Gap_30AMI)
+bins_vouchergap30 <- c(0, 5, 10, 25, 50, 100)
+bins_vouchergap50 <- c(0, 5, 10, 25, 50, 100, 200)
+#colorNumeric(c("#e8e9ee", "#1f2859")
+
+palette1a <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_states$`Voucher Gap at 30% AMI, Normalized by Renter Pop`, bins=bins_vouchergap30)
+palette1b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_states$`Voucher Gap at 50% AMI, Normalized by Renter Pop`, bins=bins_vouchergap50)
 
 map <- leaflet(map)
     
-map.states_voucher_gap <- map %>% setView(lng = -98.34,
+map_states_voucher_gap <- map %>% setView(lng = -98.34,
                 lat = 39.49,
                 zoom = 4.25) %>%
   setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
@@ -314,57 +364,278 @@ map.states_voucher_gap <- map %>% setView(lng = -98.34,
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
-  addPolygons(data = mapdata,
-              fillColor = ~ palette1a(Voucher_Gap_30AMI),
-              stroke = T,
-              weight=0.5,
-              color="grey",
-              fillOpacity = 1,
-              group = "Voucher Gap",
-                highlight = highlightOptions(
-                weight = 1,
-                color = "black",
-                fillOpacity = 1,
-                bringToFront = T)) %>%
-              # popup = addPopupGraph(my_list, tooltip = TRUE)
+  addPolygons(data = mapdata_states,
+    fillColor = ~ palette1a(`Voucher Gap at 30% AMI, Normalized by Renter Pop`),
+    stroke = T,
+    weight=2,
+    color="#e6e6e6",
+    fillOpacity = 0.9,
+    group = "30%") %>%
   addPopupGraphs(
-    my_list,
-    group="Voucher Gap",
+    plot_list_vouchergap_30AMI,
+    group= "30%",
     opacity = 1,
+    height=290,
     tooltip = TRUE) %>%
-  addLegend(data=mapdata,
-            position = "bottomright",
-            values = ~Voucher_Gap_30AMI, 
-            pal = palette1a,
-            opacity = 1,
-            title = "Voucher Gap",
-            group = "Voucher Gap")
+  addLegend(data=mapdata_states,
+    position = "bottomright",
+    values = ~`Voucher Gap at 30% AMI, Normalized by Renter Pop`, 
+    pal = palette1a,
+    opacity = 0.9,
+    title = "30%",
+    group = "30%",
+    className = "info legend 30%") %>%
+  addPolygons(data = mapdata_states,
+    fillColor = ~ palette1b(`Voucher Gap at 50% AMI, Normalized by Renter Pop`),
+    stroke = 2,
+    weight=1,
+    color="#e6e6e6",
+    fillOpacity = 0.9,
+    group = "50%") %>%
+  addPopupGraphs(
+    plot_list_vouchergap_50AMI,
+    group= "50%",
+    opacity = 1,
+    height=290,
+    tooltip = TRUE) %>%
+  addLegend(data=mapdata_states,
+    position = "bottomright",
+    values = ~`Voucher Gap at 50% AMI, Normalized by Renter Pop`, 
+    pal = palette1b,
+    opacity = 1,
+    title = "50%",
+    group = "50%",
+    className = "info legend 50%") %>%
+   addLayersControl(
+     baseGroups = c("30%", "50%"),
+     position = "bottomleft",
+     options = layersControlOptions(collapsed = FALSE)) %>%
+  htmlwidgets::onRender("
+      function(el, x) {
+         var updateLegend = function () {
+            var selectedGroup = document.querySelectorAll('input:checked')[0].nextSibling.innerText.substr(1);
 
-map.states_voucher_gap
-#saveWidget(map.states_voucher_gap, file="map_states_voucher_gap_draft_july15.html")
+            document.querySelectorAll('.legend').forEach(a => a.hidden=true);
+            document.querySelectorAll('.legend').forEach(l => {
+               if (l.classList.contains(selectedGroup)) l.hidden=false;
+            });
+         };
+         updateLegend();
+         this.on('baselayerchange', el => updateLegend());
+      }") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio<br>at an AMI of: </label><br>');
+        }
+    ") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+        }
+    ") %>%
+htmlwidgets::onRender("
+    function(el, x) {
+      this.on('baselayerchange', function(e) {
+        e.layer.bringToBack();
+      })
+    }
+  ")
+
+# map_states_voucher_gap
+
+# saveWidget(map_states_voucher_gap, file="map_states_voucher_gap.html")
 
 ```
 
-# Map Set 2: States and MSAs
+## Map 2 - MSAs
+
+```{r creating popup bar graphs for the voucher gap 30 map for MSAs}
+#Define a wrapper function for MSA labels, if needed
+wrapper <- function(x, ...) 
+ {
+   paste(strwrap(x, ...), collapse = "\n")
+ }
+
+mapdata_msas_long_30 <- mapdata_msas %>%
+  dplyr::select(`MSA`, `Total Households 30AMI Eligible`, `Total Households Actual`) %>%
+  dplyr::rename("Actual Vouchers Available in 2020" = `Total Households Actual`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 30AMI Eligible`)
+
+mapdata_msas_long_30 <- melt(mapdata_msas_long_30, id="MSA", measure=c("Total Eligible Households", "Actual Vouchers Available in 2020"))
+
+mapdata_msas_long_30_labels=c("Total\nEligible\nHouseholds", "Actual\nVouchers\nAvailable\nin 2020")
+
+plot_list_vouchergap_30AMI_msas <- list()  
+loop<-for (i in unique(mapdata_msas_long_30$MSA)) {
+MSA<-mapdata_msas_long_30%>% filter(MSA==i)
+  plot<-ggplot(MSA, aes(x=variable, y=value, fill=variable)) + 
+    geom_bar(stat="identity", show.legend = FALSE) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    scale_fill_manual(values = paletteHIP3) + 
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1000000)) +
+    scale_x_discrete(labels=mapdata_msas_long_30_labels)+
+    labs(x="", y="", title=wrapper(i, 27))+
+    plotTheme()
+  plot_list_vouchergap_30AMI_msas[[i]] <- plot
+}
+
+```
+
+```{r creating popup bar graphs for the voucher gap 50 map for MSAs}
+
+mapdata_msas_long_50 <- mapdata_msas %>%
+  dplyr::select(`MSA`, `Total Households 50AMI Eligible`, `Total Households Actual`) %>%
+  dplyr::rename("Actual Vouchers Available in 2020" = `Total Households Actual`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 50AMI Eligible`)
+
+
+mapdata_msas_long_50 <- melt(mapdata_msas_long_50, id="MSA", measure=c("Total Eligible Households", "Actual Vouchers Available in 2020"))
+
+mapdata_msas_long_50_labels=c("Total\nEligible\nHouseholds", "Actual\nVouchers\nAvailable\nin 2020")
+
+plot_list_vouchergap_50AMI_msas <- list()  
+loop<-for (i in unique(mapdata_msas_long_50$MSA)) {
+MSA<-mapdata_msas_long_50%>% filter(MSA==i)
+  plot<-ggplot(MSA, aes(x=variable, y=value, fill=variable)) + 
+    geom_bar(stat="identity", show.legend = FALSE) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    scale_fill_manual(values = paletteHIP3) + 
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
+    scale_x_discrete(labels=mapdata_msas_long_50_labels)+
+    labs(x="", y="", title=wrapper(i, 26))+
+    plotTheme()
+  plot_list_vouchergap_50AMI_msas[[i]] <- plot
+}
+
+```
+
+
+
+```{r voucher map for msas}
+# Create leaflet palette, labels, map object
+# Create leaflet palette, labels, map object
+bins_vouchergap30_msas <- c(0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000)
+bins_vouchergap50_msas <- c(0, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 3000)
+#colorNumeric(c("#e8e9ee", "#1f2859")
+
+palette2a <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 30AMI`, bins=bins_vouchergap30_msas)
+palette2b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 50AMI`, bins=bins_vouchergap50_msas)
+
+map <- leaflet(map)
+    
+map_msas_voucher_gap <- map %>% setView(lng = -98.34,
+                lat = 39.49,
+                zoom = 4.25) %>%
+  setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
+  addMapPane(name = "polygons", zIndex = 410) %>% 
+  addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
+  addProviderTiles("CartoDB.PositronNoLabels",
+                                      options = providerTileOptions(minZoom = 3.5)) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels", 
+                   options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
+                   group = "map labels") %>%
+  addPolygons(data = mapdata_msas,
+    fillColor = ~ palette2a(`Weighted Voucher Gap 30AMI`),
+    stroke = T,
+    weight=0.5,
+    color="grey",
+    fillOpacity = 1,
+    group = "30%") %>%
+  addPopupGraphs(
+    plot_list_vouchergap_30AMI_msas,
+    group= "30%",
+    opacity = 1,
+    height=300,
+    tooltip = TRUE) %>%
+  addLegend(data=mapdata_msas,
+    position = "bottomright",
+    values = ~`Weighted Voucher Gap 30AMI`, 
+    pal = palette2a,
+    opacity = 1,
+    title = "30%",
+    group = "30%",
+    className = "info legend 30%") %>%
+  addPolygons(data = mapdata_msas,
+    fillColor = ~ palette2b(`Weighted Voucher Gap 50AMI`),
+    stroke = T,
+    weight=0.5,
+    color="grey",
+    fillOpacity = 1,
+    group = "50%") %>%
+  addPopupGraphs(
+    plot_list_vouchergap_50AMI_msas,
+    group= "50%",
+    opacity = 1,
+    tooltip = TRUE) %>%
+  addLegend(data=mapdata_msas,
+    position = "bottomright",
+    values = ~`Weighted Voucher Gap 50AMI`, 
+    pal = palette2b,
+    opacity = 1,
+    title = "50%",
+    group = "50%",
+    className = "info legend 50%") %>%
+   addLayersControl(
+     baseGroups = c("30%", "50%"),
+     position = "bottomleft",
+     options = layersControlOptions(collapsed = FALSE)) %>%
+  htmlwidgets::onRender("
+      function(el, x) {
+         var updateLegend = function () {
+            var selectedGroup = document.querySelectorAll('input:checked')[0].nextSibling.innerText.substr(1);
+
+            document.querySelectorAll('.legend').forEach(a => a.hidden=true);
+            document.querySelectorAll('.legend').forEach(l => {
+               if (l.classList.contains(selectedGroup)) l.hidden=false;
+            });
+         };
+         updateLegend();
+         this.on('baselayerchange', el => updateLegend());
+      }") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio<br>at an AMI of: </label><br>');
+        }
+    ") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+        }
+    ") %>%
+htmlwidgets::onRender("
+    function(el, x) {
+      this.on('baselayerchange', function(e) {
+        e.layer.bringToBack();
+      })
+    }
+  ")
+map_msas_voucher_gap
+
+#saveWidget(map_msas_voucher_gap, file="map_msas_voucher_gap.html")
+
+```
+
+
+# Map Set 2: States and MSAs and Rural Areas, Expected Voucher Use
 ## States
 ```{r popup bar graphs for states at 30AMI}
-mapdata_states_long_30 <- mapdata %>%
-  dplyr::select(State, Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.x, Number.of.Vouchers.NUMERIC.x) %>%
-  dplyr::rename("Total Eligible Households" = Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.x) %>%
-  dplyr::rename("Total Households Served" = Number.of.Vouchers.NUMERIC.x)
+mapdata_states_long_30 <- mapdata_states %>%
+  dplyr::select(`State`, `Total Households 30AMI Eligible`, `Total Households 30AMI Expected`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 30AMI Eligible`) %>%
+  dplyr::rename("Expected Households Served" = `Total Households 30AMI Expected`)
 
-mapdata_states_long_30 <- melt(mapdata_states_long_30, id="State", measure=c("Total Eligible Households", "Total Households Served"))
+mapdata_states_long_30 <- melt(mapdata_states_long_30, id="State", measure=c("Total Eligible Households", "Expected Households Served"))
 
-mapdata_states_long_30_labels=c("Total\nEligible\nHouseholds", "Total\nHouseholds\nServed")
+mapdata_states_long_30_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseholds\nServed")
 
 plot_list_states_30AMI <- list()  
-loop<-for (i in unique(mapdata$State)) {
+loop<-for (i in unique(mapdata_states_long_30$State)) {
 State<-mapdata_states_long_30 %>% filter(State==i)
   plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
-    geom_text(aes(label = format(value, big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
     scale_fill_manual(values = paletteHIP2) + 
-    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1450000)) +
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
     scale_x_discrete(labels=mapdata_states_long_30_labels)+
     labs(x="", y="", title=i)+
     plotTheme()
@@ -373,23 +644,23 @@ State<-mapdata_states_long_30 %>% filter(State==i)
 ```
 
 ```{r popup bar graphs for states at 50AMI}
-mapdata_states_long_50 <- mapdata %>%
-  dplyr::select(State, Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.y, Number.of.Vouchers.NUMERIC.y) %>%
-  dplyr::rename("Total Eligible Households" = Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.y) %>%
-  dplyr::rename("Total Households Served" = Number.of.Vouchers.NUMERIC.y)
+mapdata_states_long_50 <- mapdata_states %>%
+  dplyr::select(`State`, `Total Households 50AMI Eligible`, `Total Households 50AMI Expected`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 50AMI Eligible`) %>%
+  dplyr::rename("Expected Households Served" = `Total Households 50AMI Expected`)
 
-mapdata_states_long_50 <- melt(mapdata_states_long_50, id="State", measure=c("Total Eligible Households", "Total Households Served"))
+mapdata_states_long_50 <- melt(mapdata_states_long_50, id="State", measure=c("Total Eligible Households", "Expected Households Served"))
 
-mapdata_states_long_50_labels=c("Total\nEligible\nHouseholds", "Total\nHouseholds\nServed")
+mapdata_states_long_50_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseholds\nServed")
 
 plot_list_states_50AMI <- list()  
-loop<-for (i in unique(mapdata$State)) {
+loop<-for (i in unique(mapdata_states_long_50$State)) {
 State<-mapdata_states_long_50 %>% filter(State==i)
   plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
-    geom_text(aes(label = format(value, big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
     scale_fill_manual(values = paletteHIP2) + 
-    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 2450000)) +
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 2500000)) +
     scale_x_discrete(labels=mapdata_states_long_50_labels)+
     labs(x="", y="", title=i)+
     plotTheme()
@@ -404,14 +675,14 @@ State<-mapdata_states_long_50 %>% filter(State==i)
 
 # Create leaflet palette, labels, map object
 bins <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, Inf)
-palette30 <- colorBin("Greens", mapdata$Number.of.Vouchers.NUMERIC.x, bins = bins)
-palette50 <- colorBin("Greens", mapdata$Number.of.Vouchers.NUMERIC.y, bins = bins)
+palette30 <- colorBin("Greens", mapdata_states$`Total Households 30AMI Expected`, bins = bins)
+palette50 <- colorBin("Greens", mapdata_states$`Total Households 50AMI Expected`, bins = bins)
 
 
 map <- leaflet(map)
     
-map.states_vouchers_scenarios <- map %>% setView(lng = -98.34,
-                lat = 39.49,
+map_states_vouchers_scenarios <- map %>% setView(lng = -96.34,
+                lat = 41.49,
                 zoom = 4.25) %>%
   setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
   addMapPane(name = "polygons", zIndex = 410) %>% 
@@ -421,38 +692,38 @@ map.states_vouchers_scenarios <- map %>% setView(lng = -98.34,
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
-  addPolygons(data = mapdata,
-      fillColor = ~ palette30(Number.of.Vouchers.NUMERIC.x),
+  addPolygons(data = mapdata_states,
+      fillColor = ~ palette30(`Total Households 30AMI Expected`),
       stroke = T,
       weight=0.5,
       color="grey",
       fillOpacity = 0.8,
       group = "30%") %>%
-  addLegend(data=mapdata,
+  addLegend(data=mapdata_states,
       position = "bottomright",
-      values = ~Number.of.Vouchers.x, 
+      values = ~`Total Households 30AMI Expected`, 
       pal = palette30,
       opacity = 0.95,
-      title = "30%",
+      title = "30% AMI",
       group = "30%",
       className = "info legend 30%") %>%
   addPopupGraphs(plot_list_states_30AMI,
       group="30%",
       opacity = 1,
       tooltip = TRUE) %>%
-  addPolygons(data = mapdata,
-      fillColor = ~ palette50(Number.of.Vouchers.NUMERIC.y),
+  addPolygons(data = mapdata_states,
+      fillColor = ~ palette50(`Total Households 50AMI Expected`),
       stroke = T,
       weight=0.5,
       color="grey",
       fillOpacity = 0.8,
       group = "50%")%>%
-  addLegend(data=mapdata,
+  addLegend(data=mapdata_states,
       position = "bottomright",
-      values = ~Number.of.Vouchers.y, 
+      values = ~`Total Households 50AMI Expected`, 
       pal = palette50,
       opacity = 0.95,
-      title = "50%",
+      title = "50% AMI",
       group = "50%",
       className = "info legend 50%") %>%
   addPopupGraphs(
@@ -522,7 +793,7 @@ map.states_vouchers_scenarios <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Total Households <br>Served at an AMI of: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\">Expected Households Served at: </label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -538,82 +809,75 @@ htmlwidgets::onRender("
     }
   ") %>% hideGroup(soi_safmr_overlay_groups)
 
-#map.states_vouchers_scenarios
-
 
 ```
 
 ## MSAs
 
 ```{r popup bar graphs for MSAs at 30AMI}
+msas_mapdata_long_30 <- mapdata_msas %>%
+  dplyr::select(`MSA`, `Total Households 30AMI Eligible`, `Total Households 30AMI Expected`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 30AMI Eligible`) %>%
+  dplyr::rename("Expected Households Served" = `Total Households 30AMI Expected`)
 
-wrapper <- function(x, ...) 
- {
-   paste(strwrap(x, ...), collapse = "\n")
- }
+msas_mapdata_long_30 <- melt(msas_mapdata_long_30, id="MSA", measure=c("Total Eligible Households", "Expected Households Served"))
 
-
-msas_mapdata_long_30 <- msas_mapdata %>%
-  dplyr::select(MSA, Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.x, Number.of.Vouchers.NUMERIC.x) %>%
-  dplyr::rename("Total Eligible Households" = Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.x) %>%
-  dplyr::rename("Total Households Served" = Number.of.Vouchers.NUMERIC.x)
-
-msas_mapdata_long_30 <- melt(msas_mapdata_long_30, id="MSA", measure=c("Total Eligible Households", "Total Households Served"))
-
-msas_mapdata_long_30_labels=c("Total\nEligible\nHouseholds", "Total\nHouseholds\nServed")
+msas_mapdata_long_30_labels=c("Total\nEligible\nHouseholds", "Ex[ected\nHouseholds\nServed")
 
 plot_list_msas_30AMI <- list()  
-loop<-for (i in unique(msas_mapdata$MSA)) {
+loop<-for (i in unique(msas_mapdata_long_30$MSA)) {
 MSA<-msas_mapdata_long_30 %>% filter(MSA==i)
   plot<-ggplot(MSA, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
-    geom_text(aes(label = format(value, big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
     scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1000000)) +
     scale_x_discrete(labels=msas_mapdata_long_30_labels)+
-    labs(x="", y="", title=i)+
+    labs(x="", y="", title=wrapper(i, 26))+
     plotTheme()
   plot_list_msas_30AMI[[i]] <- plot
 }
 ```
 
 ```{r popup bar graphs for MSAs at 50AMI}
-msas_mapdata_long_50 <- msas_mapdata %>%
-  dplyr::select(MSA, Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.y, Number.of.Vouchers.NUMERIC.x) %>%
-  dplyr::rename("Total Eligible Households" = Number.of.Vouchers.if.Only.Renters.Participate.NUMERIC.y) %>%
-  dplyr::rename("Total Households Served" = Number.of.Vouchers.NUMERIC.x)
+msas_mapdata_long_50 <- mapdata_msas %>%
+  dplyr::select(`MSA`, `Total Households 50AMI Eligible`, `Total Households 50AMI Expected`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 50AMI Eligible`) %>%
+  dplyr::rename("Expected Households Served" = `Total Households 50AMI Expected`)
 
-msas_mapdata_long_50 <- melt(msas_mapdata_long_50, id="MSA", measure=c("Total Eligible Households", "Total Households Served"))
+msas_mapdata_long_50 <- melt(msas_mapdata_long_50, id="MSA", measure=c("Total Eligible Households", "Expected Households Served"))
 
-msas_mapdata_long_50_labels=c("Total\nEligible\nHouseholds", "Total\nHouseholds\nServed")
+msas_mapdata_long_50_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseholds\nServed")
 
 plot_list_msas_50AMI <- list()  
-loop<-for (i in unique(msas_mapdata$MSA)) {
+loop<-for (i in unique(msas_mapdata_long_50$MSA)) {
 MSA<-msas_mapdata_long_50 %>% filter(MSA==i)
   plot<-ggplot(MSA, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
-    geom_text(aes(label = format(value, big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
     scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
     scale_x_discrete(labels=msas_mapdata_long_50_labels)+
-     labs(x="", y="", title=i)+
+     labs(x="", y="", title=wrapper(i, 26))+
     plotTheme()
   plot_list_msas_50AMI[[i]] <- plot
 }
 ```
 
+
 ```{r map msas}
 # MSA MAP
 
 # Create leaflet palette, labels, map object
-msa_bins <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, Inf)
-msa_palette30 <- colorBin("Greens", msas_mapdata$Number.of.Vouchers.NUMERIC.x, bins = msa_bins)
-msa_palette50 <- colorBin("Greens", msas_mapdata$Number.of.Vouchers.NUMERIC.y, bins = msa_bins)
+msa_bins30 <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, Inf)
+msa_bins50 <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, Inf)
+msa_palette30 <- colorBin("Greens", mapdata_msas$`Total Households 30AMI Expected`, bins = msa_bins30)
+msa_palette50 <- colorBin("Greens", mapdata_msas$`Total Households 50AMI Expected`, bins = msa_bins50)
 
 map <- leaflet(map)
     
-map.msas_vouchers_scenarios <- map %>% setView(lng = -98.34,
-                lat = 39.49,
+map_msas_vouchers_scenarios <- map %>% setView(lng = -96.34,
+                lat = 41.49,
                 zoom = 4.25) %>%
   setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
   addMapPane(name = "polygons", zIndex = 410) %>% 
@@ -623,38 +887,38 @@ map.msas_vouchers_scenarios <- map %>% setView(lng = -98.34,
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
-  addPolygons(data = msas_mapdata,
-      fillColor = ~ msa_palette30(Number.of.Vouchers.NUMERIC.x),
+  addPolygons(data = mapdata_msas,
+      fillColor = ~ msa_palette30(`Total Households 30AMI Expected`),
       stroke = T,
       weight=0.5,
       color="grey",
       fillOpacity = 0.8,
       group = "30%") %>%
-  addLegend(data=msas_mapdata,
+  addLegend(data=mapdata_msas,
       position = "bottomright",
-      values = ~Number.of.Vouchers.x, 
+      values = ~`Total Households 30AMI Expected`, 
       pal = msa_palette30,
       opacity = 0.95,
-      title = "30%",
+      title = "30% AMI",
       group = "30%",
       className = "info legend 30%") %>%
   addPopupGraphs(plot_list_msas_30AMI,
       group="30%",
       opacity = 1,
       tooltip = TRUE) %>%
-  addPolygons(data = msas_mapdata,
-      fillColor = ~ msa_palette50(Number.of.Vouchers.NUMERIC.y),
+  addPolygons(data = mapdata_msas,
+      fillColor = ~ msa_palette50(`Total Households 50AMI Expected`),
       stroke = T,
       weight=0.5,
       color="grey",
       fillOpacity = 0.8,
       group = "50%")%>%
-  addLegend(data=msas_mapdata,
+  addLegend(data=mapdata_msas,
       position = "bottomright",
-      values = ~Number.of.Vouchers.y, 
+      values = ~`Total Households 50AMI Expected`, 
       pal = msa_palette50,
       opacity = 0.95,
-      title = "50%",
+      title = "50% AMI",
       group = "50%",
       className = "info legend 50%") %>%
   addPopupGraphs(
@@ -724,7 +988,7 @@ map.msas_vouchers_scenarios <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Total Households <br>Served at an AMI of: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\">Total Households Served at: </label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -741,13 +1005,412 @@ htmlwidgets::onRender("
   ") %>% hideGroup(soi_safmr_overlay_groups)
 
 
-#map.msas_vouchers_scenarios
+```
+## Rural Areas
+
+```{r popup bar graphs for rural areas at 30AMI}
+
+mapdata_rural_long_30 <- mapdata_rural %>%
+  dplyr::select(`State`, `Total Households 30AMI Eligible`, `Total Households 30AMI Expected`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 30AMI Eligible`) %>%
+  dplyr::rename("Expected Households Served" = `Total Households 30AMI Expected`)
+
+mapdata_rural_long_30 <- melt(mapdata_rural_long_30, id="State", measure=c("Total Eligible Households", "Expected Households Served"))
+
+mapdata_rural_long_30_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseholds\nServed")
+
+plot_list_rural_30AMI <- list()  
+loop<-for (i in unique(mapdata_rural_long_30$State)) {
+State<-mapdata_states_long_30 %>% filter(State==i)
+  plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
+    geom_bar(stat="identity", show.legend = FALSE) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    scale_fill_manual(values = paletteHIP2) + 
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
+    scale_x_discrete(labels=mapdata_states_long_30_labels)+
+    labs(x="", y="", title=i, subtitle= "Rural Areas")+
+    plotTheme() +
+  theme(plot.title = element_text(size = 13, face="bold", colour = "black", margin=margin(5,0,0,0)))+
+  theme(plot.subtitle = element_text(size = 11, face="italic", colour = "black", margin=margin(5,0,10,0)))
+  plot_list_states_30AMI[[i]] <- plot
+}
+```
+
+```{r popup bar graphs for rural areas at 50AMI}
+mapdata_rural_long_50 <- mapdata_rural %>%
+  dplyr::select(`State`, `Total Households 50AMI Eligible`, `Total Households 50AMI Expected`) %>%
+  dplyr::rename("Total Eligible Households" = `Total Households 50AMI Eligible`) %>%
+  dplyr::rename("Expected Households Served" = `Total Households 50AMI Expected`)
+
+mapdata_rural_long_50 <- melt(mapdata_rural_long_50, id="State", measure=c("Total Eligible Households", "Expected Households Served"))
+
+mapdata_rural_long_50_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseholds\nServed")
+
+plot_list_rural_50AMI <- list()  
+loop<-for (i in unique(mapdata_rural_long_50$State)) {
+State<-mapdata_states_long_50 %>% filter(State==i)
+  plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
+    geom_bar(stat="identity", show.legend = FALSE) +
+    geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
+    scale_fill_manual(values = paletteHIP2) + 
+    scale_y_continuous(labels = scales::comma_format(),limits=c(0, 2500000)) +
+    scale_x_discrete(labels=mapdata_states_long_50_labels)+
+    labs(x="", y="", title=i, subtitle="Rural Areas" )+
+    plotTheme()+
+  theme(plot.title = element_text(size = 13, face="bold", colour = "black", margin=margin(5,0,0,0)))+
+  theme(plot.subtitle = element_text(size = 11, face="italic", colour = "black", margin=margin(5,0,10,0)))
+  plot_list_states_50AMI[[i]] <- plot
+}
+```
+
+```{r map rural areas mapped as states}
+
+# Create leaflet palette, labels, map object
+bins_rural <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, Inf)
+palette30_rural <- colorBin("Greens", mapdata_rural$`Total Households 30AMI Expected`, bins = bins_rural)
+palette50_rural <- colorBin("Greens", mapdata_rural$`Total Households 50AMI Expected`, bins = bins_rural)
+
+
+map <- leaflet(map)
+    
+map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
+                lat = 41.49,
+                zoom = 4.25) %>%
+  setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
+  addMapPane(name = "polygons", zIndex = 410) %>% 
+  addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
+  addProviderTiles("CartoDB.PositronNoLabels",
+                                      options = providerTileOptions(minZoom = 3.5)) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels", 
+                   options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
+                   group = "map labels") %>%
+  addPolygons(data = mapdata_rural,
+      fillColor = ~ palette30_rural(`Total Households 30AMI Expected`),
+      stroke = T,
+      weight=0.5,
+      color="grey",
+      fillOpacity = 0.8,
+      group = "30%") %>%
+  addLegend(data=mapdata_rural,
+      position = "bottomright",
+      values = ~`Total Households 30AMI Expected`, 
+      pal = palette30_rural,
+      opacity = 0.95,
+      title = "30% AMI",
+      group = "30%",
+      className = "info legend 30%") %>%
+  addPopupGraphs(plot_list_states_30AMI,
+      group="30%",
+      opacity = 1,
+      tooltip = TRUE) %>%
+  addPolygons(data = mapdata_rural,
+      fillColor = ~ palette50_rural(`Total Households 50AMI Expected`),
+      stroke = T,
+      weight=0.5,
+      color="grey",
+      fillOpacity = 0.8,
+      group = "50%")%>%
+  addLegend(data=mapdata_rural,
+      position = "bottomright",
+      values = ~`Total Households 50AMI Expected`, 
+      pal = palette50_rural,
+      opacity = 0.95,
+      title = "50% AMI",
+      group = "50%",
+      className = "info legend 50%") %>%
+  addPopupGraphs(
+      plot_list_states_50AMI,
+      group="50%",
+      opacity = 1,
+      tooltip = TRUE) %>%
+  addPolygons(data = soi_states,
+              fill =F,
+              opacity = 0.8,
+              weight=3,
+              color="#1f2859",
+              group = "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_states.png' height='15' width='15'> SOI Protections: States") %>%
+  addPolygons(data = soi_counties,
+              fill = T,
+              fillOpacity = 0.25,
+              opacity = 1,
+              weight=1.5,
+              color="#00CCFF",
+              group = "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_counties.png' height='15' width='15'> SOI Protections: Counties",
+              label = paste(
+                "<strong>","<font size=2 color=#00CCFF>",soi_counties$NAME,"County","</font>","</strong>") %>%
+                lapply(htmltools::HTML),
+  ) %>%
+    addPolygons(data = safmr_counties_geom,
+              fill = T,
+              fillOpacity = 0.25,
+              opacity = 1,
+              weight=1.5,
+              color="#990066",
+              group = "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_safmr.png' height='15' width='15'> SAFMR Sites",
+              label = paste(
+                "<strong>","<font size=2 color=#990066>",safmr_counties_geom$County,"</font>", "</strong>") %>%
+                lapply(htmltools::HTML),
+  ) %>%
+  addCircleMarkers(data = soi_cities_centroids,
+                lng = ~x,
+                lat = ~y,
+                radius=2.5,
+                fillOpacity=.9,
+                stroke=T,
+                weight = 2,
+                fillColor = "#00CCFF",
+                color="#1f2859",
+               group = "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_cities.png' height='15' width='15'> SOI Protections: Cities",
+              label = paste(
+                "<strong>","<font size=2 color=#00CCFF>",soi_cities$Locality_Name,"</font>","</strong>") %>%
+                lapply(htmltools::HTML),
+  ) %>%
+   addLayersControl(
+     overlayGroups = c("<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_states.png' height='15' width='15'> SOI Protections: States", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_counties.png' height='15' width='15'> SOI Protections: Counties", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_cities.png' height='15' width='15'> SOI Protections: Cities", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_safmr.png' height='15' width='15'> SAFMR Sites"), 
+     baseGroups = c("30%", "50%"),
+     position = "bottomleft",
+     options = layersControlOptions(collapsed = FALSE)) %>%
+  htmlwidgets::onRender("
+      function(el, x) {
+         var updateLegend = function () {
+            var selectedGroup = document.querySelectorAll('input:checked')[0].nextSibling.innerText.substr(1);
+
+            document.querySelectorAll('.legend').forEach(a => a.hidden=true);
+            document.querySelectorAll('.legend').forEach(l => {
+               if (l.classList.contains(selectedGroup)) l.hidden=false;
+            });
+         };
+         updateLegend();
+         this.on('baselayerchange', el => updateLegend());
+      }") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.legend').prepend('<label style=\"text-align:left\">Expected Households Served at: </label><br>');
+        }
+    ") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+        }
+    ") %>%
+htmlwidgets::onRender("
+    function(el, x) {
+      this.on('baselayerchange', function(e) {
+        e.layer.bringToBack();
+      })
+    }
+  ") %>% hideGroup(soi_safmr_overlay_groups)
+
+
+```
+
+# Breakout Groups Interactive Map (States only, 30% AMI)
+
+```{r breakouts data}
+
+# Load data
+hh_lifted_out_poverty_30AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_30AMI.xlsx") %>%
+  mutate(AMI = "30")
+hh_lifted_out_poverty_50AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_50AMI.xlsx") %>%
+  mutate(AMI = "50")
+
+voucher_breakouts_30AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_30AMI.xlsx") %>%
+  mutate(AMI = "30")
+voucher_breakouts_50AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_50AMI.xlsx") %>%
+  mutate(AMI = "50")
+
+# Bring in states shapefile, read as an sf
+states <- st_read("data/states_shp/cb_2018_us_state_500k.shp") %>%
+  dplyr::select(-AWATER, -ALAND, -STATEFP) %>%
+  dplyr::rename(State = NAME) %>%
+  st_transform("EPSG:4326")
+
+# Join data
+## 30% AMI
+breakouts_mapdata_30AMI <- left_join(hh_lifted_out_poverty_30AMI, states, by="State") %>%
+  left_join(voucher_breakouts_30AMI)
+
+breakouts_mapdata_30AMI <- breakouts_mapdata_30AMI %>% st_as_sf() %>%
+  st_transform("EPSG:4326")
+
+## 50% AMI, just in case it is needed
+breakouts_mapdata_50AMI <- left_join(hh_lifted_out_poverty_50AMI, states, by="State") %>%
+  left_join(voucher_breakouts_50AMI)
+
+breakouts_mapdata_50AMI <- breakouts_mapdata_50AMI %>% st_as_sf() %>%
+  st_transform("EPSG:4326")
+
+# Rename columns
+breakouts_mapdata_30AMI <- breakouts_mapdata_30AMI %>%
+  dplyr::rename(Children = `Number of Vouchers Going to Rental Households with Children`) %>%
+  dplyr::rename(Seniors = `Number of Vouchers Going to Rental Households with Seniors`) %>%
+  dplyr::rename(Color = `Number of Vouchers Going to Rental Households with Householders of Color`) %>%
+  dplyr::rename(OutPoverty = `Number Lifted Out of Poverty by Voucher`) %>%
+  dplyr::rename(Currently_in_Poverty = `Number of Eligible Voucher Households Currently in Poverty`) 
+
+breakouts_mapdata_50AMI <- breakouts_mapdata_50AMI %>%
+  dplyr::rename(Children = `Number of Vouchers Going to Rental Households with Children`) %>%
+  dplyr::rename(Seniors = `Number of Vouchers Going to Rental Households with Seniors`) %>%
+  dplyr::rename(Color = `Number of Vouchers Going to Rental Households with Householders of Color`) %>%
+  dplyr::rename(OutPoverty = `Number Lifted Out of Poverty by Voucher`)
+
+```
+
+
+```{r popup labels}
+
+label_children = paste(
+              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+              "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
+                "<strong>","<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$Children, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+label_seniors = paste(
+              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+                             "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
+              "<strong>", "<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$Seniors, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+label_color = paste(
+              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+                             "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
+              "<strong>", "<font size=2>",  "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$Color, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+label_outpoverty = paste(
+              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
+               "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
+              "<strong>",  "<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$OutPoverty, big.mark = ","), "</font>", "<br>") %>%
+                lapply(htmltools::HTML)
+
+```
+
+```{r leaflet map}
+# Create leaflet palette, labels, map object
+#palette1a <- colorNumeric(c("#ffffff", "#1f2859"), domain=mapdata$Voucher_Gap_30AMI)
+pal_children <- colorNumeric(palette="Blues", domain=NULL)
+pal_seniors <- colorNumeric(palette="Purples", domain=NULL)
+pal_ofcolor <- colorNumeric(palette="Reds", domain=NULL)
+pal_outofpoverty <- colorNumeric(palette="Greens", domain=NULL)
+
+map <- leaflet(map)
+    
+map_breakouts <- map %>% setView(lng = -98.34,
+                lat = 39.49,
+                zoom = 4.25) %>%
+  setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
+  addMapPane(name = "polygons", zIndex = 410) %>% 
+  addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
+  addProviderTiles("CartoDB.PositronNoLabels",
+                                      options = providerTileOptions(minZoom = 3.5)) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels", 
+                   options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
+                   group = "map labels") %>%
+  addPolygons(data = breakouts_mapdata_30AMI,
+              fillColor = ~ pal_children(breakouts_mapdata_30AMI$Children),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_children,
+              group = "With_Children") %>%
+  addLegend(data=breakouts_mapdata_30AMI,
+              position = "bottomright",
+              values = ~breakouts_mapdata_30AMI$Children, 
+              pal = pal_children,
+              opacity = 0.95,
+              title = "Expected Households<br>Served at 30% AMI",
+              group = "With_Children",
+              className = "info legend With_Children") %>%
+  addPolygons(data = breakouts_mapdata_30AMI,
+              fillColor = ~ pal_seniors(breakouts_mapdata_30AMI$Seniors),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_seniors,
+              group = "With_Seniors") %>%
+  addLegend(data=breakouts_mapdata_30AMI,
+              position = "bottomright",
+              values = ~breakouts_mapdata_30AMI$Seniors, 
+              pal = pal_seniors,
+              opacity = 0.95,
+              title = "Expected Households<br>Served at 30% AMI",
+              group = "With_Seniors",
+              className = "info legend With_Seniors") %>%
+   addPolygons(data = breakouts_mapdata_30AMI,
+              fillColor = ~ pal_ofcolor(breakouts_mapdata_30AMI$Color),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_color,
+              group = "Of_Color") %>%
+  addLegend(data=breakouts_mapdata_30AMI,
+              position = "bottomright",
+              values = ~breakouts_mapdata_30AMI$Color, 
+              pal = pal_ofcolor,
+              opacity = 0.95,
+              title = "Expected Households<br>Served at 30% AMI",
+              group = "Of_Color",
+              className = "info legend Of_Color") %>%
+  addPolygons(data = breakouts_mapdata_30AMI,
+              fillColor = ~ pal_outofpoverty(breakouts_mapdata_30AMI$OutPoverty),
+              stroke = T,
+              weight=0.5,
+              color="grey",
+              fillOpacity = 0.8,
+              label = ~label_outpoverty,
+      group = "Lifted_out_of_Poverty") %>%
+  addLegend(data=breakouts_mapdata_30AMI,
+              position = "bottomright",
+              values = ~breakouts_mapdata_30AMI$OutPoverty, 
+              pal = pal_outofpoverty,
+              opacity = 0.95,
+              title = "Expected Households<br>Served at 30% AMI",
+              group = "Lifted_out_of_Poverty",
+              className = "info legend Lifted_out_of_Poverty") %>%
+  addLayersControl(
+     baseGroups = c("With_Children", "With_Seniors", "Of_Color", "Lifted_out_of_Poverty"),
+     position = "bottomleft",
+     options = layersControlOptions(collapsed = FALSE)) %>%
+   htmlwidgets::onRender("
+      function(el, x) {
+         var updateLegend = function () {
+            var selectedGroup = document.querySelectorAll('input:checked')[0].nextSibling.innerText.substr(1);
+
+            document.querySelectorAll('.legend').forEach(a => a.hidden=true);
+            document.querySelectorAll('.legend').forEach(l => {
+               if (l.classList.contains(selectedGroup)) l.hidden=false;
+            });
+         };
+         updateLegend();
+         this.on('baselayerchange', el => updateLegend());
+      }"
+  ) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select a Group of Households:</label>');
+        }
+    ") %>%
+htmlwidgets::onRender("
+    function(el, x) {
+      this.on('baselayerchange', function(e) {
+        e.layer.bringToBack();
+      })
+    }
+  ") 
+
+#map_breakouts
+
 ```
 
 ```{r save widgets}
 # update with today's date, if desired
-saveWidget(map.states_voucher_gap, file="map.states_voucher_gap_30AMI.html")
-saveWidget(map.states_vouchers_scenarios, file="map.states_vouchers_scenarios.html")
-saveWidget(map.msas_vouchers_scenarios, file="map.msas_vouchers_scenarios.html")
+saveWidget(map_states_voucher_gap, file="map_states_voucher_gap.html")
+saveWidget(map_msas_voucher_gap, file="map_msas_voucher_gap.html")
+saveWidget(map_states_vouchers_scenarios, file="map_states_vouchers_scenarios.html")
+saveWidget(map_msas_vouchers_scenarios, file="map_msas_vouchers_scenarios.html")
+saveWidget(map_ruralareas_vouchers_scenarios, file="map_ruralareas_vouchers_scenarios.html")
+
+#saveWidget(map_breakouts, file="map_states_breakouts.html")
 ```
+
 

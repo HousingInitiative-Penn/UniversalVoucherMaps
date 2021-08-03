@@ -96,19 +96,23 @@ static_mapdata_50AMI <- static_mapdata_50AMI %>%
 ```{r}
 label_children = paste(
               "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-                "<strong>","<font size=2>", "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Children, big.mark = ","), "</font>", "<br>") %>%
+                "<strong>","<font size=2>", "Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Children, big.mark = ","), "</font>", "<br>",
+               "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Eligible_HH_30AMI, big.mark = ","), "</font>", "<br>") %>%
                 lapply(htmltools::HTML)
 label_seniors = paste(
               "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-                "<strong>", "<font size=2>", "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Seniors, big.mark = ","), "</font>", "<br>") %>%
+                "<strong>", "<font size=2>", "Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Seniors, big.mark = ","), "</font>", "<br>",
+                             "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Eligible_HH_30AMI, big.mark = ","), "</font>", "<br>") %>%
                 lapply(htmltools::HTML)
 label_color = paste(
               "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-                "<strong>", "<font size=2>",  "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Color, big.mark = ","), "</font>", "<br>") %>%
+                "<strong>", "<font size=2>",  "Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$Color, big.mark = ","), "</font>", "<br>",
+                             "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Eligible_HH_30AMI, big.mark = ","), "</font>", "<br>") %>%
                 lapply(htmltools::HTML)
 label_outpoverty = paste(
               "<strong>", "<font size=3.5>",static_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-                "<strong>",  "<font size=2>", "Number of Vouchers: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$OutPoverty, big.mark = ","), "</font>", "<br>") %>%
+                "<strong>",  "<font size=2>", "Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(static_mapdata_30AMI$OutPoverty, big.mark = ","), "</font>", "<br>",
+               "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Eligible_HH_30AMI, big.mark = ","), "</font>", "<br>") %>%
                 lapply(htmltools::HTML)
 
 ```
@@ -195,7 +199,7 @@ map_breakouts <- map %>% setView(lng = -98.34,
               values = ~static_mapdata_30AMI$OutPoverty, 
               pal = pal_outofpoverty,
               opacity = 0.95,
-              title = "Households Served",
+              title = "Households Served\nat an AMI of 30%",
               group = "Lifted_out_of_Poverty",
               className = "info legend Lifted_out_of_Poverty") %>%
   addLayersControl(
@@ -219,6 +223,11 @@ map_breakouts <- map %>% setView(lng = -98.34,
   htmlwidgets::onRender("
         function() {
             $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select a Group of Households:</label>');
+        }
+    ") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.legend').append('<label style=\"text-align:left\">at 30% AMI</label><br>');
         }
     ") %>%
 htmlwidgets::onRender("
