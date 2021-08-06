@@ -425,12 +425,12 @@ map_states_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio at: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
         function() {
-            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\"><strong>Select an AMI:</strong></label>');
         }
     ") %>%
 htmlwidgets::onRender("
@@ -588,12 +588,12 @@ map_msas_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio at: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
         function() {
-            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\"><strong>Select an AMI:</strong></label>');
         }
     ") %>%
 htmlwidgets::onRender("
@@ -785,7 +785,7 @@ map_states_vouchers_scenarios <- map %>% setView(lng = -96.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at</strong></label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected<br> Households<br>Served at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -980,7 +980,7 @@ map_msas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at</strong> </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected<br> Households<br>Served at</strong> </label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -1177,7 +1177,7 @@ map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at</strong> </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected<br> Households<br>Served at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -1505,7 +1505,7 @@ map_breakouts <- map %>% setView(lng = -98.34,
   ) %>%
    htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at 30% AMI</strong><br></label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected<br> Households<br>Served at<br>30% AMI</strong><br></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
