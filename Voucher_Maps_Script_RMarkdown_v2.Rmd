@@ -56,12 +56,18 @@ plotTheme <- function(base_size = 12) {
     strip.text.x = element_text(size = 14)
   )
 }
-paletteHIP3 <- c("#f0c332", "#009244", "#1f2859")
-#paletteHIP2 <- c("#f0c332", "#009244")
-paletteHIP2 <- c("#f0c332", "#009244")
+# paletteHIP3 <- c("#f0c332", "#009244", "#1f2859")
+# #paletteHIP2 <- c("#f0c332", "#009244")
+# paletteHIP2 <- c("#f0c332", "#009244")
 #light green 8cc63f
 #gray 969696
 # safmr color: orange eb9037
+
+#NEW 
+#paletteHIP2 <- c("#1f2859", "#68688e")
+
+paletteHIP2 <- c("#f0c332", "#009244")
+# #b2b0c5
 
 ```
 
@@ -112,7 +118,6 @@ mapdata_msas <- mapdata_msas %>% st_as_sf() %>%
   st_transform(st_crs(states))
 
 ```
-`
 
 ```{r rural areas data to load for mapping, message=FALSE, warning=FALSE}
 mapdata_rural <- read_excel("data/RuralAreas_Universal_Voucher_AllData.xlsx")
@@ -298,7 +303,7 @@ State<-mapdata_states_long_30%>% filter(State==i)
   plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
     geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
-    scale_fill_manual(values = paletteHIP3) + 
+    scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
     scale_x_discrete(labels=mapdata_states_long_30_labels)+
     labs(x="", y="", title=i)+
@@ -326,7 +331,7 @@ State<-mapdata_states_long_50%>% filter(State==i)
   plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
     geom_text(aes(label = format(round(value, digits=0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
-    scale_fill_manual(values = paletteHIP3) + 
+    scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 2500000)) +
     scale_x_discrete(labels=mapdata_states_long_50_labels)+
     labs(x="", y="", title=i)+
@@ -339,17 +344,14 @@ State<-mapdata_states_long_50%>% filter(State==i)
 
 
 ```{r create leaflet map states}
-#mapdata$Actual.Number.of.Vouchers.Available.2020.x <- as.numeric(mapdata$Actual.Number.of.Vouchers.Available.2020.x)
-
-# STATES MAP - Universe of eligible households, actual vouchers available in 2020, voucher number gap
 
 # Create leaflet palette, labels, map object
-bins_vouchergap30 <- c(0, 5, 10, 25, 50, 100)
-bins_vouchergap50 <- c(0, 5, 10, 25, 50, 100, 200)
+bins_vouchergap_states <- c(0, 5, 10, 25, 50, 100, 150, 200)
+bins_vouchergap_states <- c(0, 5, 10, 25, 50, 100, 150, 200)
 #colorNumeric(c("#e8e9ee", "#1f2859")
 
-palette1a <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_states$`Voucher Gap at 30% AMI, Normalized by Renter Pop`, bins=bins_vouchergap30)
-palette1b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_states$`Voucher Gap at 50% AMI, Normalized by Renter Pop`, bins=bins_vouchergap50)
+palette1a <- colorBin(c("#e8e9ee", "#1f2859"),domain=mapdata_states$`Voucher Gap at 30% AMI, Normalized by Renter Pop`, bins=bins_vouchergap_states)
+palette1b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_states$`Voucher Gap at 50% AMI, Normalized by Renter Pop`, bins=bins_vouchergap_states)
 
 map <- leaflet(map)
     
@@ -360,50 +362,48 @@ map_states_voucher_gap <- map %>% setView(lng = -98.34,
   addMapPane(name = "polygons", zIndex = 410) %>% 
   addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
   addProviderTiles("CartoDB.PositronNoLabels",
-                                      options = providerTileOptions(minZoom = 3.5)) %>%
+                                      options = providerTileOptions(minZoom = 3.5, opacity=0.5)) %>%
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
   addPolygons(data = mapdata_states,
     fillColor = ~ palette1a(`Voucher Gap at 30% AMI, Normalized by Renter Pop`),
     stroke = T,
-    weight=2,
-    color="#e6e6e6",
-    fillOpacity = 0.9,
+    weight=1.5,
+    color="grey",
+    fillOpacity = 1,
     group = "30%") %>%
   addPopupGraphs(
     plot_list_vouchergap_30AMI,
     group= "30%",
     opacity = 1,
-    height=290,
     tooltip = TRUE) %>%
   addLegend(data=mapdata_states,
     position = "bottomright",
     values = ~`Voucher Gap at 30% AMI, Normalized by Renter Pop`, 
     pal = palette1a,
-    opacity = 0.9,
-    title = "30%",
+    opacity = 0.95,
+    title = "30% AMI",
     group = "30%",
     className = "info legend 30%") %>%
   addPolygons(data = mapdata_states,
     fillColor = ~ palette1b(`Voucher Gap at 50% AMI, Normalized by Renter Pop`),
-    stroke = 2,
-    weight=1,
-    color="#e6e6e6",
-    fillOpacity = 0.9,
+    stroke = T,
+    weight=1.5,
+    color="grey",
+    fillOpacity = 1,
     group = "50%") %>%
   addPopupGraphs(
     plot_list_vouchergap_50AMI,
     group= "50%",
     opacity = 1,
-    height=290,
     tooltip = TRUE) %>%
   addLegend(data=mapdata_states,
     position = "bottomright",
     values = ~`Voucher Gap at 50% AMI, Normalized by Renter Pop`, 
     pal = palette1b,
-    opacity = 1,
-    title = "50%",
+    opacity = 0.95,
+    title = "50% AMI",
     group = "50%",
     className = "info legend 50%") %>%
    addLayersControl(
@@ -425,7 +425,7 @@ map_states_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio<br>at an AMI of: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio at: </label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -442,9 +442,6 @@ htmlwidgets::onRender("
   ")
 
 # map_states_voucher_gap
-
-# saveWidget(map_states_voucher_gap, file="map_states_voucher_gap.html")
-
 ```
 
 ## Map 2 - MSAs
@@ -471,10 +468,10 @@ MSA<-mapdata_msas_long_30%>% filter(MSA==i)
   plot<-ggplot(MSA, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
     geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
-    scale_fill_manual(values = paletteHIP3) + 
+    scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1000000)) +
     scale_x_discrete(labels=mapdata_msas_long_30_labels)+
-    labs(x="", y="", title=wrapper(i, 27))+
+    labs(x="", y="", title=wrapper(i, 26))+
     plotTheme()
   plot_list_vouchergap_30AMI_msas[[i]] <- plot
 }
@@ -499,7 +496,7 @@ MSA<-mapdata_msas_long_50%>% filter(MSA==i)
   plot<-ggplot(MSA, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
     geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
-    scale_fill_manual(values = paletteHIP3) + 
+    scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
     scale_x_discrete(labels=mapdata_msas_long_50_labels)+
     labs(x="", y="", title=wrapper(i, 26))+
@@ -513,13 +510,11 @@ MSA<-mapdata_msas_long_50%>% filter(MSA==i)
 
 ```{r voucher map for msas}
 # Create leaflet palette, labels, map object
-# Create leaflet palette, labels, map object
-bins_vouchergap30_msas <- c(0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000)
-bins_vouchergap50_msas <- c(0, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 3000)
-#colorNumeric(c("#e8e9ee", "#1f2859")
 
-palette2a <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 30AMI`, bins=bins_vouchergap30_msas)
-palette2b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 50AMI`, bins=bins_vouchergap50_msas)
+bins_vouchergap_msas <- c(0, 200, 400, 600, 800, 1000, 2000, 3000)
+
+palette2a <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 30AMI`, bins=bins_vouchergap_msas)
+palette2b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 50AMI`, bins=bins_vouchergap_msas)
 
 map <- leaflet(map)
     
@@ -530,35 +525,34 @@ map_msas_voucher_gap <- map %>% setView(lng = -98.34,
   addMapPane(name = "polygons", zIndex = 410) %>% 
   addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
   addProviderTiles("CartoDB.PositronNoLabels",
-                                      options = providerTileOptions(minZoom = 3.5)) %>%
+                                      options = providerTileOptions(minZoom = 3.5, opacity=0.5)) %>%
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
   addPolygons(data = mapdata_msas,
     fillColor = ~ palette2a(`Weighted Voucher Gap 30AMI`),
     stroke = T,
-    weight=0.5,
+    weight=1.5,
     color="grey",
     fillOpacity = 1,
     group = "30%") %>%
   addPopupGraphs(
     plot_list_vouchergap_30AMI_msas,
+    opacity=1,
     group= "30%",
-    opacity = 1,
-    height=300,
     tooltip = TRUE) %>%
   addLegend(data=mapdata_msas,
     position = "bottomright",
     values = ~`Weighted Voucher Gap 30AMI`, 
     pal = palette2a,
-    opacity = 1,
-    title = "30%",
+    opacity = 0.95,
+    title = "30% AMI",
     group = "30%",
     className = "info legend 30%") %>%
   addPolygons(data = mapdata_msas,
     fillColor = ~ palette2b(`Weighted Voucher Gap 50AMI`),
     stroke = T,
-    weight=0.5,
+    weight=1.5,
     color="grey",
     fillOpacity = 1,
     group = "50%") %>%
@@ -571,8 +565,8 @@ map_msas_voucher_gap <- map %>% setView(lng = -98.34,
     position = "bottomright",
     values = ~`Weighted Voucher Gap 50AMI`, 
     pal = palette2b,
-    opacity = 1,
-    title = "50%",
+    opacity = 0.95,
+    title = "50% AMI",
     group = "50%",
     className = "info legend 50%") %>%
    addLayersControl(
@@ -594,7 +588,7 @@ map_msas_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio<br>at an AMI of: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\">Voucher Gap Ratio at: </label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -609,9 +603,7 @@ htmlwidgets::onRender("
       })
     }
   ")
-map_msas_voucher_gap
-
-#saveWidget(map_msas_voucher_gap, file="map_msas_voucher_gap.html")
+#map_msas_voucher_gap
 
 ```
 
@@ -669,14 +661,14 @@ State<-mapdata_states_long_50 %>% filter(State==i)
 ```
 
 ```{r map states}
-# Voucher Map - States - all eligible households dand total households served (the expected gain)
+# Voucher Map - States - all eligible households and total households served (the expected gain)
 ## keep 30 and 50 as ami toggles
 #greens_map_gradient <- c("ffffff","#009244")
 
 # Create leaflet palette, labels, map object
-bins <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, Inf)
-palette30 <- colorBin("Greens", mapdata_states$`Total Households 30AMI Expected`, bins = bins)
-palette50 <- colorBin("Greens", mapdata_states$`Total Households 50AMI Expected`, bins = bins)
+states_use_bins <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, Inf)
+palette30 <- colorBin("Greens", mapdata_states$`Total Households 30AMI Expected`, bins = states_use_bins)
+palette50 <- colorBin("Greens", mapdata_states$`Total Households 50AMI Expected`, bins = states_use_bins)
 
 
 map <- leaflet(map)
@@ -688,16 +680,16 @@ map_states_vouchers_scenarios <- map %>% setView(lng = -96.34,
   addMapPane(name = "polygons", zIndex = 410) %>% 
   addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
   addProviderTiles("CartoDB.PositronNoLabels",
-                                      options = providerTileOptions(minZoom = 3.5)) %>%
+                                      options = providerTileOptions(minZoom = 3.5, opacity=0.5)) %>%
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
   addPolygons(data = mapdata_states,
       fillColor = ~ palette30(`Total Households 30AMI Expected`),
       stroke = T,
-      weight=0.5,
+      weight=1.5,
       color="grey",
-      fillOpacity = 0.8,
+      fillOpacity = 1,
       group = "30%") %>%
   addLegend(data=mapdata_states,
       position = "bottomright",
@@ -714,9 +706,9 @@ map_states_vouchers_scenarios <- map %>% setView(lng = -96.34,
   addPolygons(data = mapdata_states,
       fillColor = ~ palette50(`Total Households 50AMI Expected`),
       stroke = T,
-      weight=0.5,
+      weight=1.5,
       color="grey",
-      fillOpacity = 0.8,
+      fillOpacity = 1,
       group = "50%")%>%
   addLegend(data=mapdata_states,
       position = "bottomright",
@@ -793,12 +785,12 @@ map_states_vouchers_scenarios <- map %>% setView(lng = -96.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Expected Households Served at: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
         function() {
-            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\"><strong>Select an AMI:</strong></label>');
         }
     ") %>%
 htmlwidgets::onRender("
@@ -809,7 +801,7 @@ htmlwidgets::onRender("
     }
   ") %>% hideGroup(soi_safmr_overlay_groups)
 
-
+#map_states_vouchers_scenarios
 ```
 
 ## MSAs
@@ -822,7 +814,7 @@ msas_mapdata_long_30 <- mapdata_msas %>%
 
 msas_mapdata_long_30 <- melt(msas_mapdata_long_30, id="MSA", measure=c("Total Eligible Households", "Expected Households Served"))
 
-msas_mapdata_long_30_labels=c("Total\nEligible\nHouseholds", "Ex[ected\nHouseholds\nServed")
+msas_mapdata_long_30_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseholds\nServed")
 
 plot_list_msas_30AMI <- list()  
 loop<-for (i in unique(msas_mapdata_long_30$MSA)) {
@@ -883,14 +875,14 @@ map_msas_vouchers_scenarios <- map %>% setView(lng = -96.34,
   addMapPane(name = "polygons", zIndex = 410) %>% 
   addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
   addProviderTiles("CartoDB.PositronNoLabels",
-                                      options = providerTileOptions(minZoom = 3.5)) %>%
+                                      options = providerTileOptions(minZoom = 3.5, opacity=0.5)) %>%
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
   addPolygons(data = mapdata_msas,
       fillColor = ~ msa_palette30(`Total Households 30AMI Expected`),
       stroke = T,
-      weight=0.5,
+      weight=1.5,
       color="grey",
       fillOpacity = 0.8,
       group = "30%") %>%
@@ -909,7 +901,7 @@ map_msas_vouchers_scenarios <- map %>% setView(lng = -96.34,
   addPolygons(data = mapdata_msas,
       fillColor = ~ msa_palette50(`Total Households 50AMI Expected`),
       stroke = T,
-      weight=0.5,
+      weight=1.5,
       color="grey",
       fillOpacity = 0.8,
       group = "50%")%>%
@@ -988,12 +980,12 @@ map_msas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Total Households Served at: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at</strong> </label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
         function() {
-            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\"><strong>Select an AMI:</strong></label>');
         }
     ") %>%
 htmlwidgets::onRender("
@@ -1004,7 +996,7 @@ htmlwidgets::onRender("
     }
   ") %>% hideGroup(soi_safmr_overlay_groups)
 
-
+#map_msas_vouchers_scenarios
 ```
 ## Rural Areas
 
@@ -1021,18 +1013,18 @@ mapdata_rural_long_30_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseho
 
 plot_list_rural_30AMI <- list()  
 loop<-for (i in unique(mapdata_rural_long_30$State)) {
-State<-mapdata_states_long_30 %>% filter(State==i)
+State<-mapdata_rural_long_30 %>% filter(State==i)
   plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
     geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
     scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 1500000)) +
-    scale_x_discrete(labels=mapdata_states_long_30_labels)+
+    scale_x_discrete(labels=mapdata_rural_long_30_labels)+
     labs(x="", y="", title=i, subtitle= "Rural Areas")+
     plotTheme() +
   theme(plot.title = element_text(size = 13, face="bold", colour = "black", margin=margin(5,0,0,0)))+
   theme(plot.subtitle = element_text(size = 11, face="italic", colour = "black", margin=margin(5,0,10,0)))
-  plot_list_states_30AMI[[i]] <- plot
+  plot_list_rural_30AMI[[i]] <- plot
 }
 ```
 
@@ -1048,25 +1040,25 @@ mapdata_rural_long_50_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseho
 
 plot_list_rural_50AMI <- list()  
 loop<-for (i in unique(mapdata_rural_long_50$State)) {
-State<-mapdata_states_long_50 %>% filter(State==i)
+State<-mapdata_rural_long_50 %>% filter(State==i)
   plot<-ggplot(State, aes(x=variable, y=value, fill=variable)) + 
     geom_bar(stat="identity", show.legend = FALSE) +
     geom_text(aes(label = format(round(value, digits = 0), big.mark = ",", scientific = FALSE)), vjust=-0.4, color="black", size=4) +
     scale_fill_manual(values = paletteHIP2) + 
     scale_y_continuous(labels = scales::comma_format(),limits=c(0, 2500000)) +
-    scale_x_discrete(labels=mapdata_states_long_50_labels)+
+    scale_x_discrete(labels=mapdata_rural_long_50_labels)+
     labs(x="", y="", title=i, subtitle="Rural Areas" )+
     plotTheme()+
   theme(plot.title = element_text(size = 13, face="bold", colour = "black", margin=margin(5,0,0,0)))+
   theme(plot.subtitle = element_text(size = 11, face="italic", colour = "black", margin=margin(5,0,10,0)))
-  plot_list_states_50AMI[[i]] <- plot
+  plot_list_rural_50AMI[[i]] <- plot
 }
 ```
 
 ```{r map rural areas mapped as states}
 
 # Create leaflet palette, labels, map object
-bins_rural <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, Inf)
+bins_rural <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 100000)
 palette30_rural <- colorBin("Greens", mapdata_rural$`Total Households 30AMI Expected`, bins = bins_rural)
 palette50_rural <- colorBin("Greens", mapdata_rural$`Total Households 50AMI Expected`, bins = bins_rural)
 
@@ -1080,14 +1072,14 @@ map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
   addMapPane(name = "polygons", zIndex = 410) %>% 
   addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
   addProviderTiles("CartoDB.PositronNoLabels",
-                                      options = providerTileOptions(minZoom = 3.5)) %>%
+                                      options = providerTileOptions(minZoom = 3.5, opacity=0.5)) %>%
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
   addPolygons(data = mapdata_rural,
       fillColor = ~ palette30_rural(`Total Households 30AMI Expected`),
       stroke = T,
-      weight=0.5,
+      weight=1.5,
       color="grey",
       fillOpacity = 0.8,
       group = "30%") %>%
@@ -1099,14 +1091,14 @@ map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       title = "30% AMI",
       group = "30%",
       className = "info legend 30%") %>%
-  addPopupGraphs(plot_list_states_30AMI,
+  addPopupGraphs(plot_list_rural_30AMI,
       group="30%",
       opacity = 1,
       tooltip = TRUE) %>%
   addPolygons(data = mapdata_rural,
       fillColor = ~ palette50_rural(`Total Households 50AMI Expected`),
       stroke = T,
-      weight=0.5,
+      weight=1.5,
       color="grey",
       fillOpacity = 0.8,
       group = "50%")%>%
@@ -1119,7 +1111,7 @@ map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       group = "50%",
       className = "info legend 50%") %>%
   addPopupGraphs(
-      plot_list_states_50AMI,
+      plot_list_rural_50AMI,
       group="50%",
       opacity = 1,
       tooltip = TRUE) %>%
@@ -1185,12 +1177,12 @@ map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\">Expected Households Served at: </label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at</strong> </label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
         function() {
-            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select an AMI:</label>');
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\"><strong>Select an AMI:</strong></label>');
         }
     ") %>%
 htmlwidgets::onRender("
@@ -1201,193 +1193,194 @@ htmlwidgets::onRender("
     }
   ") %>% hideGroup(soi_safmr_overlay_groups)
 
-
-```
-
-# Breakout Groups Interactive Map (States only, 30% AMI)
-
-```{r breakouts data}
-
-# Load data
-hh_lifted_out_poverty_30AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_30AMI.xlsx") %>%
-  mutate(AMI = "30")
-hh_lifted_out_poverty_50AMI <- read_excel("data/Households_Lifted_Out_of_Poverty_6-9_50AMI.xlsx") %>%
-  mutate(AMI = "50")
-
-voucher_breakouts_30AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_30AMI.xlsx") %>%
-  mutate(AMI = "30")
-voucher_breakouts_50AMI <- read_excel("data/Revised_Voucher_Breakouts_6-15_50AMI.xlsx") %>%
-  mutate(AMI = "50")
-
-# Bring in states shapefile, read as an sf
-states <- st_read("data/states_shp/cb_2018_us_state_500k.shp") %>%
-  dplyr::select(-AWATER, -ALAND, -STATEFP) %>%
-  dplyr::rename(State = NAME) %>%
-  st_transform("EPSG:4326")
-
-# Join data
-## 30% AMI
-breakouts_mapdata_30AMI <- left_join(hh_lifted_out_poverty_30AMI, states, by="State") %>%
-  left_join(voucher_breakouts_30AMI)
-
-breakouts_mapdata_30AMI <- breakouts_mapdata_30AMI %>% st_as_sf() %>%
-  st_transform("EPSG:4326")
-
-## 50% AMI, just in case it is needed
-breakouts_mapdata_50AMI <- left_join(hh_lifted_out_poverty_50AMI, states, by="State") %>%
-  left_join(voucher_breakouts_50AMI)
-
-breakouts_mapdata_50AMI <- breakouts_mapdata_50AMI %>% st_as_sf() %>%
-  st_transform("EPSG:4326")
-
-# Rename columns
-breakouts_mapdata_30AMI <- breakouts_mapdata_30AMI %>%
-  dplyr::rename(Children = `Number of Vouchers Going to Rental Households with Children`) %>%
-  dplyr::rename(Seniors = `Number of Vouchers Going to Rental Households with Seniors`) %>%
-  dplyr::rename(Color = `Number of Vouchers Going to Rental Households with Householders of Color`) %>%
-  dplyr::rename(OutPoverty = `Number Lifted Out of Poverty by Voucher`) %>%
-  dplyr::rename(Currently_in_Poverty = `Number of Eligible Voucher Households Currently in Poverty`) 
-
-breakouts_mapdata_50AMI <- breakouts_mapdata_50AMI %>%
-  dplyr::rename(Children = `Number of Vouchers Going to Rental Households with Children`) %>%
-  dplyr::rename(Seniors = `Number of Vouchers Going to Rental Households with Seniors`) %>%
-  dplyr::rename(Color = `Number of Vouchers Going to Rental Households with Householders of Color`) %>%
-  dplyr::rename(OutPoverty = `Number Lifted Out of Poverty by Voucher`)
-
+#map_ruralareas_vouchers_scenarios
 ```
 
 
-```{r popup labels}
+
+# Poverty map
+
+```{r load poverty data and join with states shp}
+mapdata_poverty <- read_excel("data/Poverty_Universal_Voucher_AllData.xlsx")
+
+mapdata_poverty <- mapdata_poverty %>%
+  filter(State != "U.S. Total") 
+
+# Join with states shp
+mapdata_poverty <- left_join(mapdata_poverty, states, by="State") %>% st_as_sf() %>%st_transform("EPSG:4326")
+
+```
+
+```{r popup tables for poverty at 30AMI}
+
+# mapdata_poverty_long_allHH_30 <- mapdata_poverty %>%
+#   dplyr::select(`State`, `Households in Poverty (Approx)`, `Total Households in Poverty Eligible 30AMI`, `Total Households Lifted Out of Poverty Eligible 30AMI`, `Total Households in Poverty Expected 30AMI`, `Total Households Lifted Out of Poverty Expected 30AMI`) %>%
+#   dplyr::rename("Households in Poverty (Approx)" = `Households in Poverty (Approx)`) %>%
+#   dplyr::rename("Total Eligible Households in Poverty" = `Total Households in Poverty Eligible 30AMI`) %>%
+#   dplyr::rename("Total Eligible Households to be Lifted out of Poverty" = `Total Households Lifted Out of Poverty Eligible 30AMI`) %>%
+#   dplyr::rename("Expected Households in Poverty Served" = `Total Households in Poverty Eligible 30AMI`) %>%
+#   dplyr::rename("Expected Households in Poverty Served and Lifted out of Poverty" = `Total Households Lifted Out of Poverty Expected 30AMI`)
+# 
+# mapdata_poverty_long_allHH_30 <- melt(mapdata_poverty_long_allHH_30, id="State", measure=c("Households in Poverty (Approx)", "Total Eligible Households in Poverty"))
+# 
+# mapdata_rural_long_30_labels=c("Total\nEligible\nHouseholds", "Expected\nHouseholds\nServed")
+# }
+```
+
+```{r pov popup labels}
+
+label_total = paste(
+  "<font size=3>", "<strong>", mapdata_poverty$State,"</strong>", "</font>","<hr>",
+  "<font size=2>", "The universal voucher would lift between", "</font>", "<br>", "<font size=2>", "<strong>", prettyNum(mapdata_poverty$`Total Households Lifted Out of Poverty Expected 30AMI`, big.mark = ","), "</strong>", "and", "</font>", "<font size=2>",  "<strong>", prettyNum(mapdata_poverty$`Total Households Lifted Out of Poverty Eligible 30AMI`, big.mark = ","), "total households", "</strong>", "<br>", "out of poverty.", "</font>", "<br>") %>%
+  lapply(htmltools::HTML)
 
 label_children = paste(
-              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-              "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
-                "<strong>","<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$Children, big.mark = ","), "</font>", "<br>") %>%
-                lapply(htmltools::HTML)
+  "<font size=3>", "<strong>", mapdata_poverty$State,"</strong>", "</font>","<hr>",
+  "<font size=2>", "The universal voucher would lift between", "</font>", "<br>", "<font size=2>", "<strong>", prettyNum(mapdata_poverty$`Households with Children Lifted Out of Poverty Expected 30AMI`, big.mark = ","), "</strong>", "and", "</font>", "<font size=2>",  "<strong>", prettyNum(mapdata_poverty$`Households with Children Lifted Out of Poverty Eligible 30AMI`, big.mark = ","), "households with children",  "</strong>", "<br>", "out of poverty.", "</font>", "<br>") %>%
+  lapply(htmltools::HTML)
+
 label_seniors = paste(
-              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-                             "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
-              "<strong>", "<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$Seniors, big.mark = ","), "</font>", "<br>") %>%
-                lapply(htmltools::HTML)
-label_color = paste(
-              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-                             "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
-              "<strong>", "<font size=2>",  "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$Color, big.mark = ","), "</font>", "<br>") %>%
-                lapply(htmltools::HTML)
-label_outpoverty = paste(
-              "<strong>", "<font size=3.5>",breakouts_mapdata_30AMI$State, "</font>", "</strong>","<br>","<hr>",
-               "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata$Total_Eligible_Households_30_NUMERIC, big.mark = ","), "</font>", "<br>",
-              "<strong>",  "<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(breakouts_mapdata_30AMI$OutPoverty, big.mark = ","), "</font>", "<br>") %>%
-                lapply(htmltools::HTML)
+  "<font size=3>", "<strong>", mapdata_poverty$State,"</strong>", "</font>","<hr>",
+  "<font size=2>", "The universal voucher would lift between", "</font>", "<br>", "<font size=2>", "<strong>", prettyNum(mapdata_poverty$`Households with Seniors (62+) Lifted Out of Poverty Expected 30AMI`, big.mark = ","), "</strong>", "and", "</font>", "<font size=2>",  "<strong>", prettyNum(mapdata_poverty$`Households with Seniors (62+) Lifted Out of Poverty Eligible 30AMI`, big.mark = ","), "households with seniors",  "</strong>","<br>", "out of poverty.", "</font>", "<br>") %>%
+  lapply(htmltools::HTML)
+
+label_ofcolor = paste(
+  "<font size=3>", "<strong>", mapdata_poverty$State,"</strong>", "</font>","<hr>",
+  "<font size=2>", "The universal voucher would lift between", "</font>", "<br>", "<font size=2>", "<strong>", prettyNum(mapdata_poverty$`Households of Color Lifted Out of Poverty Expected 30AMI`, big.mark = ","), "</strong>", "and", "</font>", "<font size=2>",  "<strong>", prettyNum(mapdata_poverty$`Households of Color Lifted Out of Poverty Eligible 30AMI`, big.mark = ","), "households of color", "</strong>", "<br>", "out of poverty.", "</font>", "<br>") %>%
+  lapply(htmltools::HTML)
+
+
 
 ```
 
-```{r leaflet map}
+
+
+```{r leaflet poverty map}
 # Create leaflet palette, labels, map object
 #palette1a <- colorNumeric(c("#ffffff", "#1f2859"), domain=mapdata$Voucher_Gap_30AMI)
-pal_children <- colorNumeric(palette="Blues", domain=NULL)
-pal_seniors <- colorNumeric(palette="Purples", domain=NULL)
-pal_ofcolor <- colorNumeric(palette="Reds", domain=NULL)
-pal_outofpoverty <- colorNumeric(palette="Greens", domain=NULL)
+blue_grad <- c("#eff3ff", "#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c")
+purple_grad <- c("#feebe2", "#fcc5c0", "#fa9fb5", "#f768a1", "#c51b8a", "#7a0177")
+orange_grad <- c("#ffffb2", "#fed976", "#feb24c", "#fd8d3c", "#f03b20", "#bd0026")
+pal_total_gradient <- (c("#f7cb44ff", "#f9a242ff", "#de7065ff", "#b8627dff", "#90548bff",  "#403891ff"))
+
+#"#7e4e90ff",
+pov_bins_total <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, Inf)
+pov_bins <- c(0, 20000, 40000, 60000, 80000, 100000, 275000)
+pal_total <- colorQuantile(palette=pal_total_gradient, domain=mapdata_poverty$`Total Households Lifted Out of Poverty Expected 30AMI`, n=6)
+pal_children <- colorQuantile(palette=blue_grad, domain=mapdata_poverty$`Households with Children Lifted Out of Poverty Expected 30AMI`, n=6)
+pal_seniors <- colorQuantile(palette=purple_grad, domain=mapdata_poverty$`Households with Seniors (62+) Lifted Out of Poverty Expected 30AMI`, n=6)
+pal_ofcolor <- colorQuantile(palette=orange_grad, domain=mapdata_poverty$`Households of Color Lifted Out of Poverty Expected 30AMI`, n=6)
 
 map <- leaflet(map)
     
-map_breakouts <- map %>% setView(lng = -98.34,
+map_poverty <- map %>% setView(lng = -98.34,
                 lat = 39.49,
                 zoom = 4.25) %>%
   setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
   addMapPane(name = "polygons", zIndex = 410) %>% 
   addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
   addProviderTiles("CartoDB.PositronNoLabels",
-                                      options = providerTileOptions(minZoom = 3.5)) %>%
+                                      options = providerTileOptions(minZoom = 3.5, opacity=0.5)) %>%
   addProviderTiles("CartoDB.PositronOnlyLabels", 
                    options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
                    group = "map labels") %>%
-  addPolygons(data = breakouts_mapdata_30AMI,
-              fillColor = ~ pal_children(breakouts_mapdata_30AMI$Children),
+  addPolygons(data = mapdata_poverty,
+              fillColor = ~ pal_total(mapdata_poverty$`Total Households Lifted Out of Poverty Expected 30AMI`),
               stroke = T,
-              weight=0.5,
+              weight=1.5,
               color="grey",
-              fillOpacity = 0.8,
+              fillOpacity = 0.9,
+              label = ~label_total,
+              group = "Total Households") %>%
+  addLegend(data=mapdata_poverty,
+              position = "bottomright",
+              colors=c("#f7cb44ff", "#f9a242ff", "#de7065ff", "#b8627dff", "#90548bff",  "#403891ff"),
+              labels = c("Fewer", "", "", "", "", "More"),
+              values = ~mapdata_poverty$`Total Households Lifted Out of Poverty Expected 30AMI`, 
+              opacity = 0.95,
+              title = "",
+              group = "TotalHouseholds",
+              className = "info legend TotalHouseholds") %>%
+  addPolygons(data = mapdata_poverty,
+              fillColor = ~ pal_children(mapdata_poverty$`Households with Children Lifted Out of Poverty Expected 30AMI`),
+              stroke = T,
+              weight=1.5,
+              color="grey",
+              fillOpacity = 0.9,
               label = ~label_children,
-              group = "With_Children") %>%
-  addLegend(data=breakouts_mapdata_30AMI,
+              group = "With Children") %>%
+  addLegend(data=mapdata_poverty,
               position = "bottomright",
-              values = ~breakouts_mapdata_30AMI$Children, 
-              pal = pal_children,
+              colors = c("#eff3ff", "#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c"),
+              labels = c("Fewer", "", "", "", "", "More"),
+              values = ~mapdata_poverty$`Households with Children Lifted Out of Poverty Expected 30AMI`,
+              #pal = pal_children,
               opacity = 0.95,
-              title = "Expected Households<br>Served at 30% AMI",
-              group = "With_Children",
-              className = "info legend With_Children") %>%
-  addPolygons(data = breakouts_mapdata_30AMI,
-              fillColor = ~ pal_seniors(breakouts_mapdata_30AMI$Seniors),
+              title = "",
+              group = "WithChildren",
+              className = "info legend WithChildren") %>%
+   addPolygons(data = mapdata_poverty,
+              fillColor = ~ pal_seniors(mapdata_poverty$`Households with Seniors (62+) Lifted Out of Poverty Expected 30AMI`),
               stroke = T,
-              weight=0.5,
+              weight=1.5,
               color="grey",
-              fillOpacity = 0.8,
+              fillOpacity = 0.9,
               label = ~label_seniors,
-              group = "With_Seniors") %>%
-  addLegend(data=breakouts_mapdata_30AMI,
+              group = "With Seniors") %>%
+  addLegend(data=mapdata_poverty,
               position = "bottomright",
-              values = ~breakouts_mapdata_30AMI$Seniors, 
-              pal = pal_seniors,
+              colors = c("#feebe2", "#fcc5c0", "#fa9fb5", "#f768a1", "#c51b8a", "#7a0177"),
+              labels = c("Fewer", "", "", "", "", "More"),
+              values = ~mapdata_poverty$`Households with Seniors (62+) Lifted Out of Poverty Expected 30AMI`,
+              #pal = pal_seniors,
               opacity = 0.95,
-              title = "Expected Households<br>Served at 30% AMI",
-              group = "With_Seniors",
-              className = "info legend With_Seniors") %>%
-   addPolygons(data = breakouts_mapdata_30AMI,
-              fillColor = ~ pal_ofcolor(breakouts_mapdata_30AMI$Color),
+              title = "",
+              group = "WithSeniors",
+              className = "info legend WithSeniors") %>%
+  addPolygons(data = mapdata_poverty,
+              fillColor = ~ pal_ofcolor(mapdata_poverty$`Households of Color Lifted Out of Poverty Expected 30AMI`),
               stroke = T,
-              weight=0.5,
+              weight=1.5,
               color="grey",
-              fillOpacity = 0.8,
-              label = ~label_color,
-              group = "Of_Color") %>%
-  addLegend(data=breakouts_mapdata_30AMI,
+              fillOpacity = 0.9,
+              label = ~label_ofcolor,
+              group = "Of Color") %>%
+  addLegend(data=mapdata_poverty,
               position = "bottomright",
-              values = ~breakouts_mapdata_30AMI$Color, 
-              pal = pal_ofcolor,
+              colors = c("#ffffb2", "#fed976", "#feb24c", "#fd8d3c", "#f03b20", "#bd0026"),
+              labels = c("Fewer", "", "", "", "", "More"),
+              values = ~mapdata_poverty$`Households of Color Lifted Out of Poverty Expected 30AMI`,
+              #pal = pal_ofcolor,
               opacity = 0.95,
-              title = "Expected Households<br>Served at 30% AMI",
-              group = "Of_Color",
-              className = "info legend Of_Color") %>%
-  addPolygons(data = breakouts_mapdata_30AMI,
-              fillColor = ~ pal_outofpoverty(breakouts_mapdata_30AMI$OutPoverty),
-              stroke = T,
-              weight=0.5,
-              color="grey",
-              fillOpacity = 0.8,
-              label = ~label_outpoverty,
-      group = "Lifted_out_of_Poverty") %>%
-  addLegend(data=breakouts_mapdata_30AMI,
-              position = "bottomright",
-              values = ~breakouts_mapdata_30AMI$OutPoverty, 
-              pal = pal_outofpoverty,
-              opacity = 0.95,
-              title = "Expected Households<br>Served at 30% AMI",
-              group = "Lifted_out_of_Poverty",
-              className = "info legend Lifted_out_of_Poverty") %>%
+              title = "",
+              group = "OfColor",
+              className = "info legend OfColor") %>%
   addLayersControl(
-     baseGroups = c("With_Children", "With_Seniors", "Of_Color", "Lifted_out_of_Poverty"),
+     baseGroups = c("Total Households", "With Children", "With Seniors", "Of Color"),
      position = "bottomleft",
      options = layersControlOptions(collapsed = FALSE)) %>%
    htmlwidgets::onRender("
       function(el, x) {
          var updateLegend = function () {
             var selectedGroup = document.querySelectorAll('input:checked')[0].nextSibling.innerText.substr(1);
-
+            var selectedClass = selectedGroup.replace(' ', '');
             document.querySelectorAll('.legend').forEach(a => a.hidden=true);
             document.querySelectorAll('.legend').forEach(l => {
-               if (l.classList.contains(selectedGroup)) l.hidden=false;
+               if (l.classList.contains(selectedClass)) l.hidden=false;
             });
          };
          updateLegend();
          this.on('baselayerchange', el => updateLegend());
       }"
   ) %>%
+   htmlwidgets::onRender("
+        function() {
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Households Lifted<br>Out of Poverty<br>at 30% AMI</strong><br></label><br>');
+        }
+    ") %>%
   htmlwidgets::onRender("
         function() {
-            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\">Select a Group of Households:</label>');
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\"><strong>Select a Group of Households:</strong></label>');
         }
     ") %>%
 htmlwidgets::onRender("
@@ -1396,11 +1389,141 @@ htmlwidgets::onRender("
         e.layer.bringToBack();
       })
     }
+  ")
+
+#map_poverty
+```
+
+
+# Breakout Groups Interactive Map (States only, 30% AMI)
+
+```{r breakout group labels}
+label_children_grp = paste(
+  "<strong>", "<font size=3.5>",mapdata_states$State, "</font>", "</strong>","<br>","<hr>",
+  "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata_states$`Households with Children 30AMI Eligible`, big.mark = ","), "</font>", "<br>",
+  "<strong>","<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata_states$`Households with Children 30AMI Expected`, big.mark = ","), "</font>", "<br>") %>%
+  lapply(htmltools::HTML)
+label_seniors_grp = paste(
+  "<strong>", "<font size=3.5>",mapdata_states$State, "</font>", "</strong>","<br>","<hr>",
+  "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata_states$`Households with Seniors (62+) 30AMI Eligible`, big.mark = ","), "</font>", "<br>",
+  "<strong>", "<font size=2>", "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata_states$`Households with Seniors (62+) 30AMI Expected`, big.mark = ","), "</font>", "<br>") %>%
+  lapply(htmltools::HTML)
+label_color_grp = paste(
+  "<strong>", "<font size=3.5>",mapdata_states$State, "</font>", "</strong>","<br>","<hr>",
+  "<strong>","<font size=2>", "Total Eligible Households: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata_states$`Households of Color 30AMI Eligible`, big.mark = ","), "</font>", "<br>",
+  "<strong>", "<font size=2>",  "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata_states$`Households of Color 30AMI Expected`, big.mark = ","), "</font>", "<br>") %>%
+  lapply(htmltools::HTML)
+
+
+```
+
+```{r leaflet breakout group map}
+# Create leaflet palette, labels, map object
+
+pal_children_grp <- colorBin(palette=blue_grad, domain=mapdata_states$`Households with Children 30AMI Expected`, n=6)
+pal_seniors_grp <- colorBin(palette=purple_grad, domain=mapdata_states$`Households with Seniors (62+) 30AMI Expected`, n=6)
+pal_ofcolor_grp <- colorBin(palette=orange_grad, domain=mapdata_states$`Households of Color 30AMI Expected`, n=6)
+
+map <- leaflet(map)
+
+map_breakouts <- map %>% setView(lng = -98.34,
+                                 lat = 39.49,
+                                 zoom = 4.25) %>%
+  setMaxBounds(lat1=5.499550, lng1=-167.276413, lat2=83.162102, lng2=-52.233040) %>%
+  addMapPane(name = "polygons", zIndex = 410) %>% 
+  addMapPane(name = "maplabels", zIndex = 420) %>% # higher zIndex rendered on top
+  addProviderTiles("CartoDB.PositronNoLabels",
+                   options = providerTileOptions(minZoom = 3.5, opacity=0.5)) %>%
+  addProviderTiles("CartoDB.PositronOnlyLabels", 
+                   options = leafletOptions(pane = "maplabels", providerTileOptions(minZoom = 3.5)),
+                   group = "map labels") %>%
+  addPolygons(data = mapdata_states,
+              fillColor = ~ pal_children_grp(mapdata_states$`Households with Children 30AMI Expected`),
+              stroke = T,
+              weight=1.5,
+              color="grey",
+              fillOpacity = 0.9,
+              label = ~label_children_grp,
+              group = "With Children") %>%
+  addLegend(data=mapdata_states,
+            position = "bottomright",
+            values = ~mapdata_states$`Households with Children 30AMI Expected`, 
+            pal = pal_children_grp,
+            opacity = 0.95,
+            title = "",
+            group = "WithChildren",
+            className = "info legend WithChildren") %>%
+  addPolygons(data = mapdata_states,
+              fillColor = ~ pal_seniors_grp(mapdata_states$`Households with Seniors (62+) 30AMI Expected`),
+              stroke = T,
+              weight=1.5,
+              color="grey",
+              fillOpacity = 0.9,
+              label = ~label_seniors_grp,
+              group = "With Seniors") %>%
+  addLegend(data=mapdata_states,
+            position = "bottomright",
+            values = ~mapdata_states$`Households with Seniors (62+) 30AMI Expected`, 
+            pal = pal_seniors_grp,
+            opacity = 0.95,
+            title = "",
+            group = "WithSeniors",
+            className = "info legend WithSeniors") %>%
+  addPolygons(data = mapdata_states,
+              fillColor = ~ pal_ofcolor_grp(mapdata_states$`Households of Color 30AMI Expected`),
+              stroke = T,
+              weight=1.5,
+              color="grey",
+              fillOpacity = 0.9,
+              label = ~label_color_grp,
+              group = "Of Color") %>%
+  addLegend(data=mapdata_states,
+            position = "bottomright",
+            values = ~mapdata_states$`Households of Color 30AMI Expected`, 
+            pal = pal_ofcolor_grp,
+            opacity = 0.95,
+            title = "",
+            group = "OfColor",
+            className = "info legend OfColor") %>%
+  addLayersControl(
+    baseGroups = c("With Children", "With Seniors", "Of Color"),
+    position = "bottomleft",
+    options = layersControlOptions(collapsed = FALSE)) %>%
+  htmlwidgets::onRender("
+      function(el, x) {
+         var updateLegend = function () {
+            var selectedGroup = document.querySelectorAll('input:checked')[0].nextSibling.innerText.substr(1);
+            var selectedClass = selectedGroup.replace(' ', '');
+            document.querySelectorAll('.legend').forEach(a => a.hidden=true);
+            document.querySelectorAll('.legend').forEach(l => {
+               if (l.classList.contains(selectedClass)) l.hidden=false;
+            });
+         };
+         updateLegend();
+         this.on('baselayerchange', el => updateLegend());
+      }"
+  ) %>%
+   htmlwidgets::onRender("
+        function() {
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Expected Households<br>Served at 30% AMI</strong><br></label><br>');
+        }
+    ") %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers').prepend('<label style=\"text-align:left\"><strong>Select a Group of Households:</strong></label>');
+        }
+    ") %>%
+  htmlwidgets::onRender("
+    function(el, x) {
+      this.on('baselayerchange', function(e) {
+        e.layer.bringToBack();
+      })
+    }
   ") 
 
 #map_breakouts
-
 ```
+
 
 ```{r save widgets}
 # update with today's date, if desired
@@ -1409,8 +1532,8 @@ saveWidget(map_msas_voucher_gap, file="map_msas_voucher_gap.html")
 saveWidget(map_states_vouchers_scenarios, file="map_states_vouchers_scenarios.html")
 saveWidget(map_msas_vouchers_scenarios, file="map_msas_vouchers_scenarios.html")
 saveWidget(map_ruralareas_vouchers_scenarios, file="map_ruralareas_vouchers_scenarios.html")
-
-#saveWidget(map_breakouts, file="map_states_breakouts.html")
+saveWidget(map_poverty, file="map_poverty.html")
+saveWidget(map_breakouts, file="map_states_breakouts.html")
 ```
 
 
