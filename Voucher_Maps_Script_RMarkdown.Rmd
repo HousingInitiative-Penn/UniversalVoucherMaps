@@ -425,7 +425,7 @@ map_states_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio at</strong></label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio<br>(Unweighted) at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -588,7 +588,7 @@ map_msas_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio at</strong></label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio<br>(Unweighted) at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -666,7 +666,7 @@ State<-mapdata_states_long_50 %>% filter(State==i)
 #greens_map_gradient <- c("ffffff","#009244")
 
 # Create leaflet palette, labels, map object
-states_use_bins <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, Inf)
+states_use_bins <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 850000)
 palette30 <- colorBin("Greens", mapdata_states$`Total Households 30AMI Expected`, bins = states_use_bins)
 palette50 <- colorBin("Greens", mapdata_states$`Total Households 50AMI Expected`, bins = states_use_bins)
 
@@ -689,7 +689,7 @@ map_states_vouchers_scenarios <- map %>% setView(lng = -96.34,
       stroke = T,
       weight=1.5,
       color="grey",
-      fillOpacity = 1,
+      fillOpacity = 0.95,
       group = "30%") %>%
   addLegend(data=mapdata_states,
       position = "bottomright",
@@ -708,7 +708,7 @@ map_states_vouchers_scenarios <- map %>% setView(lng = -96.34,
       stroke = T,
       weight=1.5,
       color="grey",
-      fillOpacity = 1,
+      fillOpacity = 0.95,
       group = "50%")%>%
   addLegend(data=mapdata_states,
       position = "bottomright",
@@ -861,10 +861,9 @@ MSA<-msas_mapdata_long_50 %>% filter(MSA==i)
 # MSA MAP
 
 # Create leaflet palette, labels, map object
-msa_bins30 <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, Inf)
-msa_bins50 <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, Inf)
-msa_palette30 <- colorBin("Greens", mapdata_msas$`Total Households 30AMI Expected`, bins = msa_bins30)
-msa_palette50 <- colorBin("Greens", mapdata_msas$`Total Households 50AMI Expected`, bins = msa_bins50)
+msa_bins <- c(0, 10000, 20000, 30000, 40000, 50000, 100000, 150000, 200000, 350000)
+msa_palette30 <- colorBin("Greens", mapdata_msas$`Total Households 30AMI Expected`, bins = msa_bins)
+msa_palette50 <- colorBin("Greens", mapdata_msas$`Total Households 50AMI Expected`, bins = msa_bins)
 
 map <- leaflet(map)
     
@@ -884,7 +883,7 @@ map_msas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       stroke = T,
       weight=1.5,
       color="grey",
-      fillOpacity = 0.8,
+      fillOpacity = 0.95,
       group = "30%") %>%
   addLegend(data=mapdata_msas,
       position = "bottomright",
@@ -903,7 +902,7 @@ map_msas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       stroke = T,
       weight=1.5,
       color="grey",
-      fillOpacity = 0.8,
+      fillOpacity = 0.95,
       group = "50%")%>%
   addLegend(data=mapdata_msas,
       position = "bottomright",
@@ -1081,7 +1080,7 @@ map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       stroke = T,
       weight=1.5,
       color="grey",
-      fillOpacity = 0.8,
+      fillOpacity = 0.95,
       group = "30%") %>%
   addLegend(data=mapdata_rural,
       position = "bottomright",
@@ -1100,7 +1099,7 @@ map_ruralareas_vouchers_scenarios <- map %>% setView(lng = -96.34,
       stroke = T,
       weight=1.5,
       color="grey",
-      fillOpacity = 0.8,
+      fillOpacity = 0.95,
       group = "50%")%>%
   addLegend(data=mapdata_rural,
       position = "bottomright",
@@ -1264,12 +1263,12 @@ orange_grad <- c("#ffffb2", "#fed976", "#feb24c", "#fd8d3c", "#f03b20", "#bd0026
 pal_total_gradient <- (c("#f7cb44ff", "#f9a242ff", "#de7065ff", "#b8627dff", "#90548bff",  "#403891ff"))
 
 #"#7e4e90ff",
-pov_bins_total <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, Inf)
-pov_bins <- c(0, 20000, 40000, 60000, 80000, 100000, 275000)
-pal_total <- colorQuantile(palette=pal_total_gradient, domain=mapdata_poverty$`Total Households Lifted Out of Poverty Expected 30AMI`, n=6)
-pal_children <- colorQuantile(palette=blue_grad, domain=mapdata_poverty$`Households with Children Lifted Out of Poverty Expected 30AMI`, n=6)
-pal_seniors <- colorQuantile(palette=purple_grad, domain=mapdata_poverty$`Households with Seniors (62+) Lifted Out of Poverty Expected 30AMI`, n=6)
-pal_ofcolor <- colorQuantile(palette=orange_grad, domain=mapdata_poverty$`Households of Color Lifted Out of Poverty Expected 30AMI`, n=6)
+pov_bins_total <- c(0, 5000, 10000, 25000, 50000, 125000, Inf)
+pov_bins <- c(0, 5000, 10000, 25000, 50000, 125000, Inf)
+pal_total <- colorBin(palette=pal_total_gradient, domain=mapdata_poverty$`Total Households Lifted Out of Poverty Expected 30AMI`, bins = pov_bins_total)
+pal_children <- colorBin(palette=blue_grad, domain=mapdata_poverty$`Households with Children Lifted Out of Poverty Expected 30AMI`, bins = pov_bins)
+pal_seniors <- colorBin(palette=purple_grad, domain=mapdata_poverty$`Households with Seniors (62+) Lifted Out of Poverty Expected 30AMI`, bins = pov_bins)
+pal_ofcolor <- colorBin(palette=orange_grad, domain=mapdata_poverty$`Households of Color Lifted Out of Poverty Expected 30AMI`, bins = pov_bins)
 
 map <- leaflet(map)
     
@@ -1289,7 +1288,7 @@ map_poverty <- map %>% setView(lng = -98.34,
               stroke = T,
               weight=1.5,
               color="grey",
-              fillOpacity = 0.9,
+              fillOpacity = 0.95,
               label = ~label_total,
               group = "Total Households") %>%
   addLegend(data=mapdata_poverty,
@@ -1527,6 +1526,7 @@ map_breakouts <- map %>% setView(lng = -98.34,
 
 ```{r save widgets}
 # update with today's date, if desired
+
 saveWidget(map_states_voucher_gap, file="map_states_voucher_gap.html")
 saveWidget(map_msas_voucher_gap, file="map_msas_voucher_gap.html")
 saveWidget(map_states_vouchers_scenarios, file="map_states_vouchers_scenarios.html")
