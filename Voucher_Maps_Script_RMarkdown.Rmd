@@ -135,83 +135,6 @@ mapdata_rural <- mapdata_rural %>% st_as_sf() %>%
   st_transform("EPSG:4326")
 
 ```
-```{r OLD popup content, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-#popup content states
-state_popup_30AMI = paste(
-                "<strong>", "<font size=3.5 color=#009244>",mapdata$State, "</font>", "</strong>","<br>","<hr>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Households Served (30% AMI)", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", mapdata$Number.of.Vouchers.x, "<br>",
-                "<strong>", "Annual Cost: ","</strong>",mapdata$Annual.Cost.of.Vouchers.x,"<br>","<br>",
-                "<strong>", "<font size=2 color=#1f2859>", "Percent of the State's Vouchers Per Group: ", "</font>", "</strong>","<br>",
-                "<strong>", "<font size=1.5>", "Households with Children: ", "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.with.Children.x, "</font>","</em>", "<br>",
-                "<strong>", "<font size=1.5>","Households with Seniors: ",  "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.with.Seniors.x,"</font>", "</em>", "<br>",
-                "<strong>","<font size=1.5>","Households in Poverty: ", "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.in.Poverty.x, "</font>", "</em>", "<br>",
-                "<strong>", "<font size=1.5>","Households with Householders of Color: ", "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.with.Householders.of.Color.x, "</font>","</em>", "<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Actual Vouchers Available in 2020", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", mapdata$Actual.Number.of.Vouchers.Available.2020.x, "<br>",
-                "<strong>", "Estimated Annual Expenditure: ","</strong>",mapdata$Estimated.Annual.Expenditure.x, "<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Eligible Households", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", mapdata$Number.of.Vouchers.if.Only.Renters.Participate.x, "<br>",
-                "<strong>", "Annual Cost: ","</strong>",mapdata$Total.Annual.Cost.of.Vouchers.if.Only.Renters.Participate.x,"<br>"
-                ) %>%
-                lapply(htmltools::HTML)
-
-state_popup_50AMI = paste(
-                "<strong>", "<font size=3.5 color=#009244>",mapdata$State, "</font>", "</strong>","<br>","<hr>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Households Served (50% AMI)", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", mapdata$Number.of.Vouchers.y, "<br>",
-                "<strong>", "Annual Cost: ","</strong>",mapdata$Annual.Cost.of.Vouchers.y,"<br>","<br>",
-                "<strong>", "<font size=2 color=#1f2859>", "Percent of the State's Vouchers Per Group: ", "</font>", "</strong>","<br>",
-                "<strong>", "<font size=1.5>", "Households with Children: ",  "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.with.Children.y, "</font>","</em>", "<br>",
-                "<strong>", "<font size=1.5>","Households with Seniors: ", "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.with.Seniors.y, "</font>","</em>", "<br>",
-                "<strong>","<font size=1.5>","Households in Poverty: ", "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.in.Poverty.y, "</font>","</em>", "<br>",
-                "<strong>", "<font size=1.5>","Households with Householders of Color: ", "</strong>",
-                "<em>", mapdata$Percent.of.Vouchers.Going.to.Rental.Households.with.Householders.of.Color.y,"</font>", "</em>", "<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Actual Vouchers Available in 2020", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", mapdata$Actual.Number.of.Vouchers.Available.2020.y, "<br>",
-                "<strong>", "Estimated Annual Expenditure: ","</strong>",mapdata$Estimated.Annual.Expenditure.y, "<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Eligible Households", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", mapdata$Number.of.Vouchers.if.Only.Renters.Participate.y, "<br>",
-                "<strong>", "Annual Cost: ","</strong>",mapdata$Total.Annual.Cost.of.Vouchers.if.Only.Renters.Participate.y,"<br>"
-                ) %>%
-                lapply(htmltools::HTML)
-
-
-#popup content msas
-msa_popup_30AMI = paste(
-                "<strong>", "<font size=3.5 color=#009244>",msas_mapdata$MSA, "</font>", "</strong>","<br>","<hr>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Households Served (30% AMI)", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", msas_mapdata$Number.of.Vouchers.x, "<br>",
-                "<strong>", "Annual Cost: ","</strong>",msas_mapdata$Annual.Cost.of.Vouchers.x,"<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Actual Vouchers Available in 2020", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", msas_mapdata$Actual.Number.of.Vouchers.Available.2020.x, "<br>",
-                "<strong>", "Estimated Monthly Expenditure: ","</strong>",msas_mapdata$Estimated.Annual.Expenditure.x, "<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Eligible Households", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", msas_mapdata$Number.of.Vouchers.if.Only.Renters.Participate.x, "<br>",
-                "<strong>", "Monthly Cost: ","</strong>",msas_mapdata$Total.Annual.Cost.of.Vouchers.if.Only.Renters.Participate.x,"<br>"
-                ) %>%
-                lapply(htmltools::HTML)
- msa_popup_50AMI = paste(
-                "<strong>", "<font size=3.5 color=#009244>",msas_mapdata$MSA, "</font>", "</strong>","<br>","<hr>",
-                 "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Households Served (50% AMI)", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", msas_mapdata$Number.of.Vouchers.y, "<br>",
-                "<strong>", "Annual Cost: ","</strong>",msas_mapdata$Annual.Cost.of.Vouchers.y,"<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Actual Vouchers Available in 2020", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", msas_mapdata$Actual.Number.of.Vouchers.Available.2020.y, "<br>",
-                "<strong>", "Estimated Monthly Expenditure: ","</strong>",msas_mapdata$Estimated.Annual.Expenditure.y, "<br>","<br>",
-                "<strong>", "<big>", "<font size=3 color=#1f2859>", "Total Eligible Households", "</font>","</big>", "</strong>","<br>",
-                "<strong>", "Number of Vouchers: ","</strong>", msas_mapdata$Number.of.Vouchers.if.Only.Renters.Participate.y, "<br>",
-                "<strong>", "Monthly Cost: ","</strong>",msas_mapdata$Total.Annual.Cost.of.Vouchers.if.Only.Renters.Participate.y,"<br>"
-              ) %>%
-                lapply(htmltools::HTML)
-```
 
 ```{r data wrangling for samfar sites and soi protections, message=FALSE, warning=FALSE, results='hide'}
 # Run data wrangling for safmr and soi protections:
@@ -277,7 +200,7 @@ soi_states_strength$GEOID <- as.character(soi_states_strength$GEOID)
 soi_states <- right_join(soi_states, soi_states_strength, by="GEOID") %>% st_as_sf() %>%
   st_transform(st_crs(states))
 
-# all overlay group names that include custom layer control .pngs - UPDATE FILE PATHS WHEN MOVED TO HIP GITHUB
+# all overlay group names that include custom layer control .pngs
 soi_safmr_overlay_groups <- c("<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_states.png' height='15' width='15'> SOI Protections: States", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_counties.png' height='15' width='15'> SOI Protections: Counties", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_soi_cities.png' height='15' width='15'> SOI Protections: Cities", "<img src='https://housinginitiative-penn.github.io/UniversalVoucherMaps/data/swatch_safmr.png' height='15' width='15'> SAFMR Sites")
 
 ```
@@ -342,16 +265,13 @@ State<-mapdata_states_long_50%>% filter(State==i)
 ```
 
 
-
-```{r create leaflet map states}
-
+```{r create leaflet map - voucher gap states}
 # Create leaflet palette, labels, map object
-bins_vouchergap_states <- c(0, 5, 10, 25, 50, 100, 150, 200)
-bins_vouchergap_states <- c(0, 5, 10, 25, 50, 100, 150, 200)
-#colorNumeric(c("#e8e9ee", "#1f2859")
+bins_vouchergap_states <- c(0, 10, 25, 50, 100, 200)
+#if decide to use a colorNumeric gradient, use colorNumeric(c("#e8e9ee", "#1f2859")
 
-palette1a <- colorBin(c("#e8e9ee", "#1f2859"),domain=mapdata_states$`Voucher Gap at 30% AMI, Normalized by Renter Pop`, bins=bins_vouchergap_states)
-palette1b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_states$`Voucher Gap at 50% AMI, Normalized by Renter Pop`, bins=bins_vouchergap_states)
+palette1a <- colorBin(palette="BuPu",domain=mapdata_states$`Voucher Gap at 30% AMI, Normalized by Renter Pop`, bins=bins_vouchergap_states)
+palette1b <- colorBin(palette="BuPu", domain=mapdata_states$`Voucher Gap at 50% AMI, Normalized by Renter Pop`, bins=bins_vouchergap_states)
 
 map <- leaflet(map)
     
@@ -425,7 +345,7 @@ map_states_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio<br>(Unweighted) at</strong></label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio<br>(Weighted) at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -508,13 +428,12 @@ MSA<-mapdata_msas_long_50%>% filter(MSA==i)
 
 
 
-```{r voucher map for msas}
+```{r create leaflet map - voucher gap for msas}
 # Create leaflet palette, labels, map object
+bins_vouchergap_msas <- c(0, 25, 50, 100, 500, 1000, 2750)
 
-bins_vouchergap_msas <- c(0, 200, 400, 600, 800, 1000, 2000, 3000)
-
-palette2a <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 30AMI`, bins=bins_vouchergap_msas)
-palette2b <- colorBin(c("#e8e9ee", "#1f2859"), domain=mapdata_msas$`Weighted Voucher Gap 50AMI`, bins=bins_vouchergap_msas)
+palette2a <- colorBin(palette="BuPu", domain=mapdata_msas$`Weighted Voucher Gap 30AMI`, bins=bins_vouchergap_msas)
+palette2b <- colorBin(palette="BuPu", domain=mapdata_msas$`Weighted Voucher Gap 50AMI`, bins=bins_vouchergap_msas)
 
 map <- leaflet(map)
     
@@ -588,7 +507,7 @@ map_msas_voucher_gap <- map %>% setView(lng = -98.34,
       }") %>%
   htmlwidgets::onRender("
         function() {
-            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio<br>(Unweighted) at</strong></label><br>');
+            $('.legend').prepend('<label style=\"text-align:left\"><strong>Voucher Gap Ratio<br>(Weighted) at</strong></label><br>');
         }
     ") %>%
   htmlwidgets::onRender("
@@ -603,13 +522,16 @@ htmlwidgets::onRender("
       })
     }
   ")
+
 #map_msas_voucher_gap
 
 ```
 
 
-# Map Set 2: States and MSAs and Rural Areas, Expected Voucher Use
-## States
+# Map Set 2: States, MSAs, and Rural Areas - Expected Voucher Use
+
+## States 
+
 ```{r popup bar graphs for states at 30AMI}
 mapdata_states_long_30 <- mapdata_states %>%
   dplyr::select(`State`, `Total Households 30AMI Eligible`, `Total Households 30AMI Expected`) %>%
@@ -660,16 +582,11 @@ State<-mapdata_states_long_50 %>% filter(State==i)
 }
 ```
 
-```{r map states}
-# Voucher Map - States - all eligible households and total households served (the expected gain)
-## keep 30 and 50 as ami toggles
-#greens_map_gradient <- c("ffffff","#009244")
-
+```{r create leaflet map for voucher eligiblity and use - states}
 # Create leaflet palette, labels, map object
 states_use_bins <- c(0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 850000)
 palette30 <- colorBin("Greens", mapdata_states$`Total Households 30AMI Expected`, bins = states_use_bins)
 palette50 <- colorBin("Greens", mapdata_states$`Total Households 50AMI Expected`, bins = states_use_bins)
-
 
 map <- leaflet(map)
     
@@ -857,9 +774,7 @@ MSA<-msas_mapdata_long_50 %>% filter(MSA==i)
 ```
 
 
-```{r map msas}
-# MSA MAP
-
+```{r create leaflet map for voucher eligiblity and use - msas}
 # Create leaflet palette, labels, map object
 msa_bins <- c(0, 10000, 20000, 30000, 40000, 50000, 100000, 150000, 200000, 350000)
 msa_palette30 <- colorBin("Greens", mapdata_msas$`Total Households 30AMI Expected`, bins = msa_bins)
@@ -997,10 +912,10 @@ htmlwidgets::onRender("
 
 #map_msas_vouchers_scenarios
 ```
+
 ## Rural Areas
 
 ```{r popup bar graphs for rural areas at 30AMI}
-
 mapdata_rural_long_30 <- mapdata_rural %>%
   dplyr::select(`State`, `Total Households 30AMI Eligible`, `Total Households 30AMI Expected`) %>%
   dplyr::rename("Total Eligible Households" = `Total Households 30AMI Eligible`) %>%
@@ -1054,8 +969,7 @@ State<-mapdata_rural_long_50 %>% filter(State==i)
 }
 ```
 
-```{r map rural areas mapped as states}
-
+```{r map voucher eligibility and use - rural areas mapped as states}
 # Create leaflet palette, labels, map object
 bins_rural <- c(0, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 100000)
 palette30_rural <- colorBin("Greens", mapdata_rural$`Total Households 30AMI Expected`, bins = bins_rural)
@@ -1196,8 +1110,7 @@ htmlwidgets::onRender("
 ```
 
 
-
-# Poverty map
+# Poverty Map
 
 ```{r load poverty data and join with states shp}
 mapdata_poverty <- read_excel("data/Poverty_Universal_Voucher_AllData.xlsx")
@@ -1210,8 +1123,8 @@ mapdata_poverty <- left_join(mapdata_poverty, states, by="State") %>% st_as_sf()
 
 ```
 
-```{r popup tables for poverty at 30AMI}
-
+```{r popup tables for poverty at 30AMI, eval=FALSE, include=FALSE}
+#DON'T RUN THIS - THIS WAS FOR SOME PREVIOUS TESTING
 # mapdata_poverty_long_allHH_30 <- mapdata_poverty %>%
 #   dplyr::select(`State`, `Households in Poverty (Approx)`, `Total Households in Poverty Eligible 30AMI`, `Total Households Lifted Out of Poverty Eligible 30AMI`, `Total Households in Poverty Expected 30AMI`, `Total Households Lifted Out of Poverty Expected 30AMI`) %>%
 #   dplyr::rename("Households in Poverty (Approx)" = `Households in Poverty (Approx)`) %>%
@@ -1226,8 +1139,7 @@ mapdata_poverty <- left_join(mapdata_poverty, states, by="State") %>% st_as_sf()
 # }
 ```
 
-```{r pov popup labels}
-
+```{r poverty map popup labels}
 label_total = paste(
   "<font size=3>", "<strong>", mapdata_poverty$State,"</strong>", "</font>","<hr>",
   "<font size=2>", "The universal voucher would lift between", "</font>", "<br>", "<font size=2>", "<strong>", prettyNum(mapdata_poverty$`Total Households Lifted Out of Poverty Expected 30AMI`, big.mark = ","), "</strong>", "and", "</font>", "<font size=2>",  "<strong>", prettyNum(mapdata_poverty$`Total Households Lifted Out of Poverty Eligible 30AMI`, big.mark = ","), "total households", "</strong>", "<br>", "out of poverty.", "</font>", "<br>") %>%
@@ -1248,13 +1160,11 @@ label_ofcolor = paste(
   "<font size=2>", "The universal voucher would lift between", "</font>", "<br>", "<font size=2>", "<strong>", prettyNum(mapdata_poverty$`Households of Color Lifted Out of Poverty Expected 30AMI`, big.mark = ","), "</strong>", "and", "</font>", "<font size=2>",  "<strong>", prettyNum(mapdata_poverty$`Households of Color Lifted Out of Poverty Eligible 30AMI`, big.mark = ","), "households of color", "</strong>", "<br>", "out of poverty.", "</font>", "<br>") %>%
   lapply(htmltools::HTML)
 
-
-
 ```
 
 
 
-```{r leaflet poverty map}
+```{r leaflet create poverty map}
 # Create leaflet palette, labels, map object
 #palette1a <- colorNumeric(c("#ffffff", "#1f2859"), domain=mapdata$Voucher_Gap_30AMI)
 blue_grad <- c("#eff3ff", "#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c")
@@ -1413,15 +1323,13 @@ label_color_grp = paste(
   "<strong>", "<font size=2>",  "Expected Households Served: ", "</font>", "</strong>",  "<font size=2>", prettyNum(mapdata_states$`Households of Color 30AMI Expected`, big.mark = ","), "</font>", "<br>") %>%
   lapply(htmltools::HTML)
 
-
 ```
 
 ```{r leaflet breakout group map}
 # Create leaflet palette, labels, map object
-
-pal_children_grp <- colorBin(palette=blue_grad, domain=mapdata_states$`Households with Children 30AMI Expected`, n=6)
-pal_seniors_grp <- colorBin(palette=purple_grad, domain=mapdata_states$`Households with Seniors (62+) 30AMI Expected`, n=6)
-pal_ofcolor_grp <- colorBin(palette=orange_grad, domain=mapdata_states$`Households of Color 30AMI Expected`, n=6)
+pal_children_grp <- colorBin(palette=blue_grad, domain=mapdata_states$`Households with Children 30AMI Expected`)
+pal_seniors_grp <- colorBin(palette=purple_grad, domain=mapdata_states$`Households with Seniors (62+) 30AMI Expected`)
+pal_ofcolor_grp <- colorBin(palette=orange_grad, domain=mapdata_states$`Households of Color 30AMI Expected`)
 
 map <- leaflet(map)
 
@@ -1525,8 +1433,6 @@ map_breakouts <- map %>% setView(lng = -98.34,
 
 
 ```{r save widgets}
-# update with today's date, if desired
-
 saveWidget(map_states_voucher_gap, file="map_states_voucher_gap.html")
 saveWidget(map_msas_voucher_gap, file="map_msas_voucher_gap.html")
 saveWidget(map_states_vouchers_scenarios, file="map_states_vouchers_scenarios.html")
